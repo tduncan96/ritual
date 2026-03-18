@@ -2,16 +2,16 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --bg-primary: #0f1117;
-    --bg-secondary: #161822;
+    --bg-primary: #090a0c;
+    --bg-secondary: #0f1117;
     --bg-card: #1a1d2b;
-    --bg-hover: #222639;
+    --bg-hover: #38751c8e;
     --border: #2a2e3f;
     --border-subtle: #1f2233;
-    --text-primary: #26c738;
-    --text-secondary: #26c738;
-    --text-muted: #5c6072;
-    --accent: #7c6aef;
+    --text-primary: #89ef6a;
+    --text-secondary: #46dc53;
+    --text-muted: #a1a1a1e4;
+    --accent: #46dc53;;
     --accent-hover: #9180f4;
     --accent-subtle: rgba(124, 106, 239, 0.1);
     --success: #34d399;

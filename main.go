@@ -13,7 +13,7 @@ var pool *sql.DB
 var templates map[string]*template.Template
 func loadTemplates() {
 	templates = make(map[string]*template.Template)
-	pages := []string{"home"}
+	pages := []string{"home", "jobs"}
 	for _, page := range pages {
 		t := template.Must(template.ParseFiles(
 			"templates/base.html",
@@ -30,11 +30,19 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
     }	
 }
 
+func jobsHandler(w http.ResponseWriter, r *http.Request) {
+	err := templates["jobs"].ExecuteTemplate(w, "base.html", nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func main() {
 	loadTemplates()
 	http.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
-	http.HandleFunc("GET /{$}", homeHandler) //Main Page
+	http.HandleFunc("GET /{$}", homeHandler) //Home/Landing Page
+	http.HandleFunc("GET /jobs", jobsHandler) //Jobs Page
 	
 	
 	log.Fatal(http.ListenAndServe(":8080", nil))

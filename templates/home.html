@@ -1,32 +1,15 @@
-{{define "title"}}Home{{end}}
-
 {{define "content"}}
         <header class="page-header">
             <div>
                 <h1>Dashboard</h1>
                 <p class="subtitle">System overview and recent activity</p>
             </div>
-            <!-- 
-                HTMX LESSON #1: hx-post and hx-target
-                When we wire this up later, clicking this button will POST to /jobs/new 
-                and swap content into a target element — no page reload needed.
-                For now it's just a placeholder.
-            -->
-            <button class="btn btn-primary">+ New Job</button>
+            <!-- <button class="btn btn-primary">+ New Job</button> -->
         </header>
 
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">Total Jobs</div>
-                <!-- 
-                    HTMX LESSON #2: hx-get and hx-trigger
-                    Later, we'll add something like:
-                      hx-get="/api/stats/jobs" 
-                      hx-trigger="load, every 30s"
-                    This tells HTMX: "When this element loads (and every 30s after), 
-                    GET that endpoint and replace my innerHTML with the response."
-                    Your Go handler just returns a fragment of HTML — not a full page.
-                -->
                 <div class="stat-value">—</div>
             </div>
             <div class="stat-card">
@@ -50,16 +33,6 @@
                     <a href="/runs" class="link-subtle">View all →</a>
                 </div>
                 <div class="card-body">
-                    <!--
-                        HTMX LESSON #3: Loading content on page load
-                        Eventually this will have:
-                          hx-get="/partials/recent-runs"
-                          hx-trigger="load"
-                          hx-swap="innerHTML"
-                        The Go endpoint returns JUST the table rows — a partial HTML fragment.
-                        That's the core HTMX pattern: your server returns HTML snippets, 
-                        not JSON. No client-side rendering needed.
-                    -->
                     <div class="empty-state">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
                             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>

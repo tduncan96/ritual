@@ -1,0 +1,107 @@
+ {{define "content"}}
+<header class="page-header">
+    <div>
+        <h1>Jobs</h1>
+        <p class="subtitle">Scheduled automations and tasks</p>
+    </div>
+    <button class="btn btn-primary"
+            hx-get="/jobs/new"
+            hx-target="#job-form-drawer"
+            hx-swap="innerHTML">
+        + New Job
+    </button>
+</header>
+
+<div class="filter-bar">
+    <div class="filter-group">
+        <button class="btn btn-ghost active"
+                hx-get="/jobs/list?filter=all"
+                hx-target="#job-list"
+                hx-swap="innerHTML">
+            All
+        </button>
+        <button class="btn btn-ghost"
+                hx-get="/jobs/list?filter=active"
+                hx-target="#job-list"
+                hx-swap="innerHTML">
+            Active
+        </button>
+        <button class="btn btn-ghost"
+                hx-get="/jobs/list?filter=paused"
+                hx-target="#job-list"
+                hx-swap="innerHTML">
+            Paused
+        </button>
+        <button class="btn btn-ghost"
+                hx-get="/jobs/list?filter=failing"
+                hx-target="#job-list"
+                hx-swap="innerHTML">
+            Failing
+        </button>
+    </div>
+    <input type="search"
+           class="search-input"
+           name="q"
+           placeholder="Search jobs…"
+           hx-get="/jobs/list"
+           hx-target="#job-list"
+           hx-swap="innerHTML"
+           hx-trigger="input changed delay:300ms, search">
+</div>
+
+<section class="card">
+    <div class="card-header">
+        <h2>All Jobs</h2>
+        <span class="link-subtle" id="job-count">— jobs</span>
+    </div>
+    <div class="card-body" id="job-list">
+        {{range .Jobs}}
+        <article class="job-row" id="job-{{.ID}}">
+            <div class="job-row-main">
+                <div class="job-status-dot status-{{.Status}}"></div>
+                <div class="job-identity">
+                    <a href="/jobs/{{.ID}}" class="job-name">{{.Name}}</a>
+                    <div class="job-meta">
+                        <code class="cron">{{.Schedule}}</code>
+                        <span class="sep">•</span>
+                        <span>{{.Host}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="job-row-timing">
+                <div class="timing-block">
+                    <div class="timing-label">Last run</div>
+                    <div class="timing-value">{{.LastRun}}</div>
+                </div>
+                <div class="timing-block">
+                    <div class="timing-label">Next run</div>
+                    <div class="timing-value">{{.NextRun}}</div>
+                </div>
+            </div>
+            <div class="job-row-actions">
+                <button class="btn btn-secondary"
+                        hx-post="/jobs/{{.ID}}/run"
+                        hx-target="#job-{{.ID}}-status"
+                        hx-swap="innerHTML">
+                    Run now
+                </button>
+                <div class="run-status" id="job-{{.ID}}-status"></div>
+                <button class="btn btn-ghost" aria-label="More actions">⋯</button>
+            </div>
+        </article>
+        {{else}}
+        <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+            </svg>
+            <p>No jobs configured. Create your first job to get started.</p>
+        </div>
+        {{end}}
+    </div>
+</section>
+
+<div id="job-form-drawer"></div>
+{{end}}

@@ -10,26 +10,31 @@ import (
 
 var pool *sql.DB
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	
-	// Main Page
-	t, err := template.New("home.html").ParseFiles("templates/home.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = t.Execute(w, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+var templates map[string]*template.Template
+func loadTemplates() {
+	templates = make(map[string]*template.Template)
+	pages := []string{"home"}
+	for _, page := range pages {
+		t := template.Must(template.ParseFiles(
+			"templates/base.html",
+			"templates/"+page+".html",
+		))
+	templates[page] = t
 	}
 }
 
-func main() {
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	err := templates["home"].ExecuteTemplate(w, "base.html", nil)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+    }	
+}
 
-	http.HandleFunc("/", handler) //Main Page
+func main() {
+	loadTemplates()
+	http.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+
+	http.HandleFunc("GET /{$}", homeHandler) //Main Page
 	
 	
 	log.Fatal(http.ListenAndServe(":8080", nil))

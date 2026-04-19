@@ -1,0 +1,81 @@
+
+{{define "content"}}
+<header class="page-header">
+    <div>
+        <h1>New Job</h1>
+        <p class="subtitle">Schedule a command to run on a cron expression</p>
+    </div>
+    <a href="/jobs" class="btn btn-ghost">← Back to jobs</a>
+</header>
+
+<section class="card">
+    <form class="job-form"
+          hx-post="/jobs"
+          hx-target="#form-feedback"
+          hx-swap="innerHTML">
+
+        <div class="form-row">
+            <label for="name">Name</label>
+            <input type="text"
+                   id="name"
+                   name="name"
+                   placeholder="Nightly database backup"
+                   required
+                   autofocus>
+            <p class="form-hint">A human-readable label. Shows up in the jobs list.</p>
+        </div>
+
+        <div class="form-row">
+            <label for="schedule">Schedule</label>
+            <input type="text"
+                   id="schedule"
+                   name="schedule"
+                   placeholder="0 2 * * *"
+                   required
+                   pattern="^[\d\*\/\,\-\s]+$">
+            <p class="form-hint">
+                Standard cron expression. Example: <code>0 2 * * *</code> runs daily at 2am.
+                <a href="https://crontab.guru" target="_blank" class="link-subtle">crontab.guru</a>
+                can help.
+            </p>
+        </div>
+
+        <div class="form-row">
+            <label for="job_type">Type</label>
+            <select id="job_type" name="job_type" required>
+                <option value="command">Command</option>
+                <option value="script" disabled>Script (coming soon)</option>
+                <option value="git_script" disabled>Git script (coming soon)</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label for="host">Host</label>
+            <select id="host" name="host" required>
+                <option value="local">Local</option>
+                <!-- Remote hosts will populate here once SSH integration is in -->
+            </select>
+            <p class="form-hint">Where the command runs. Add remote hosts under Settings → Hosts.</p>
+        </div>
+
+        <div class="form-row">
+            <label for="command">Command</label>
+            <textarea id="command"
+                      name="command"
+                      rows="4"
+                      placeholder="/usr/local/bin/backup.sh --full"
+                      required
+                      spellcheck="false"></textarea>
+            <p class="form-hint">Runs as the Ritual service user. Use absolute paths for reliability.</p>
+        </div>
+
+        <div class="form-actions">
+            <div id="form-feedback" class="form-feedback"></div>
+            <div class="form-buttons">
+                <a href="/jobs" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create job</button>
+            </div>
+        </div>
+    </form>
+</section>
+{{end}}

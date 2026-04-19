@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"html/template"
 	"log"
+	"os"
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var pool *sql.DB
@@ -37,13 +38,22 @@ func jobsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
 func main() {
+	dbPath := os.Getenv("RITUAL_DB_PATH")
+		if dbPath == "" { 
+			dbPath = "./ritual.db" 
+		}
+	port := os.Getenv("RITUAL_PORT")
+		if port == "" {
+			port = "8080"
+		}
+	
 	loadTemplates()
 	http.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	http.HandleFunc("GET /{$}", homeHandler) //Home/Landing Page
 	http.HandleFunc("GET /jobs", jobsHandler) //Jobs Page
 	
-	
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

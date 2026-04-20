@@ -33,7 +33,7 @@ func initDB(path string) {
 var templates map[string]*template.Template
 func loadTemplates() {
 	templates = make(map[string]*template.Template)
-	pages := []string{"home", "jobs"}
+	pages := []string{"home", "jobs", "job_form"}
 	for _, page := range pages {
 		t := template.Must(template.ParseFiles(
 			"templates/base.html",
@@ -51,6 +51,7 @@ func render(w http.ResponseWriter, page string, data any) {
 	}
 	if err := t.ExecuteTemplate(w, "base.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -58,6 +59,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	err := templates["home"].ExecuteTemplate(w, "base.html", nil)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
     }	
 }
 
@@ -73,19 +75,16 @@ type Job struct {
 	Updated string
 }
 
-func (j *Job) saveJob() error {
+func (j *Job) createJob() error {
 	result, err := db.Exec(
-		`INSERT 
-		INTO jobs (JobName, Schedule, Host, JobStatus, JobType, Commands, Created, Updated) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO jobs (JobName, Schedule, Host, JobStatus, JobType, Commands) 
+		VALUES (?, ?, ?, ?, ?)`,
 		j.JobName,
 		j.Schedule,
 		j.Host,
 		j.JobStatus,
 		j.JobType,
 		j.Commands,
-		j.Created,
-		j.Updated,
 	)
 	if err != nil {
 		return err
@@ -98,6 +97,7 @@ func (j *Job) saveJob() error {
 	j.ID = int(id)
 	return nil
 }
+
 func getAllJobs() ([]Job, error) {
 	var jobs []Job
 	rows, err := db.Query("SELECT * FROM jobs")
@@ -159,8 +159,38 @@ func jobsHandler(w http.ResponseWriter, r *http.Request) {
 	jobs, err := getAllJobs()
 	if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	render(w, "jobs", map[string]any{"Jobs": jobs})
+}
+
+func jobFormHandler(w http.ResponseWriter, r *http.Request) {
+	err := templates["job_form"].ExecuteTemplate(w, "base.html", nil)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func createJobHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	j := Job{
+		JobName: r.FormValue("job_name"),
+		Schedule: r.FormValue("schedule"),
+		Host: r.FormValue("host"),
+		JobType: r.FormValue("job_type"),
+		Commands: r.FormValue("command"),
+	}
+
+	if err := j.createJob(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 
@@ -180,7 +210,10 @@ func main() {
 	http.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	http.HandleFunc("GET /{$}", homeHandler) //Home/Landing Page
+
 	http.HandleFunc("GET /jobs", jobsHandler) //Jobs Page
+	http.HandleFunc("GET /jobs/new", jobFormHandler) // New Job Creation Form
+	http.HandleFunc("POST /jobs/new", createJobHandler) // Submit Form
 	
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

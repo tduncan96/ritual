@@ -1,8 +1,8 @@
-
 {{define "content"}}
+
 <header class="page-header">
     <div>
-        <h1>New Job</h1>
+        <h1>Create New Job</h1>
         <p class="subtitle">Schedule a command to run on a cron expression</p>
     </div>
     <a href="/jobs" class="btn btn-ghost">← Back to jobs</a>
@@ -15,14 +15,14 @@
           hx-swap="innerHTML">
 
         <div class="form-row">
-            <label for="name">Name</label>
+            <label for="job_name">Name</label>
             <input type="text"
                    id="name"
                    name="name"
                    placeholder="Nightly database backup"
                    required
                    autofocus>
-            <p class="form-hint">A human-readable label. Shows up in the jobs list.</p>
+            <p class="form-hint"><i>A human-readable label. Shows up in the jobs list.</i></p>
         </div>
 
         <div class="form-row">
@@ -73,7 +73,11 @@
             <div id="form-feedback" class="form-feedback"></div>
             <div class="form-buttons">
                 <a href="/jobs" class="btn btn-ghost">Cancel</a>
-                <button type="submit" class="btn btn-primary">Create job</button>
+                <button type="submit" 
+                        class="btn btn-primary"
+                        hx-post="/jobs/new">
+                    Create Job
+                </button>
             </div>
         </div>
     </form>

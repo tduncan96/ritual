@@ -1,0 +1,71 @@
+{{define "job"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.JobName}} — Ritual</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="/static/favicon.ico">
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="/" class="logo-link">
+            <img src="/static/logo.svg" alt="Ritual" class="logo">
+        </a>
+        <nav>
+            <a href="/jobs">← All Jobs</a>
+        </nav>
+    </header>
+
+    <main class="job-detail">
+        <div class="job-header">
+            <h1>{{.JobName}}</h1>
+            <span class="status status-{{.JobStatus}}">{{.JobStatus}}</span>
+        </div>
+
+        <dl class="job-meta">
+            <dt>Schedule</dt>
+            <dd><code>{{.Schedule}}</code></dd>
+
+            <dt>Host</dt>
+            <dd>{{.Host}}</dd>
+
+            <dt>Type</dt>
+            <dd>{{.JobType}}</dd>
+
+            <dt>Created</dt>
+            <dd>{{.Created}}</dd>
+        </dl>
+
+        <section class="job-commands">
+            <h2>Commands</h2>
+            <pre><code>{{.Commands}}</code></pre>
+        </section>
+
+        <section class="job-actions">
+            <button class="btn btn-primary"
+                    hx-post="/jobs/{{.ID}}/run"
+                    hx-target="#run-output"
+                    hx-swap="innerHTML">
+                Run Now
+            </button>
+
+            <button class="btn btn-danger"
+                    hx-delete="/jobs/{{.ID}}"
+                    hx-confirm="Delete '{{.JobName}}'? This cannot be undone."
+                    hx-on::after-request="if(event.detail.successful) window.location.href='/jobs'">
+                Delete
+            </button>
+        </section>
+
+        <section class="job-output">
+            <h2>Output</h2>
+            <div id="run-output" class="output-pane">
+                <p class="muted">Click "Run Now" to execute this job.</p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}

@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"strconv"
 	"database/sql"
 	_ "modernc.org/sqlite"
 	_ "embed"
@@ -73,29 +74,83 @@ type Job struct {
 	Commands string
 	Created string
 	Updated string
+	LastRun string
+	NextRun string
 }
 
-func (j *Job) createJob() error {
+func (j *Job) createJob() (int64, error) {
 	result, err := db.Exec(
-		`INSERT INTO jobs (JobName, Schedule, Host, JobStatus, JobType, Commands) 
-		VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO jobs (JobName, Schedule, Host, JobStatus, JobType, Commands, LastRun, NextRun) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		j.JobName,
 		j.Schedule,
 		j.Host,
 		j.JobStatus,
 		j.JobType,
 		j.Commands,
+		j.LastRun,
+		j.NextRun,
 	)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	j.ID = int(id)
-	return nil
+	return id, nil
+}
+
+func createJobHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	j := Job{
+		JobName: r.FormValue("job_name"),
+		Schedule: r.FormValue("schedule"),
+		Host: r.FormValue("host"),
+		JobStatus: "Active",
+		JobType: r.FormValue("job_type"),
+		Commands: r.FormValue("command"),
+		LastRun: "Never",
+		NextRun: "Fuck You",
+	}
+
+	_, err := j.createJob()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func deleteJob(id int) (int64, error) {
+	result, err := db.Exec("DELETE FROM jobs WHERE ID = ?", id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		_, err := deleteJob(id)
+			if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func getAllJobs() ([]Job, error) {
@@ -118,6 +173,8 @@ func getAllJobs() ([]Job, error) {
 			&j.Commands, 
 			&j.Created, 
 			&j.Updated,
+			&j.LastRun,
+			&j.NextRun,
 		)
 		if err != nil {
 			return nil, err
@@ -171,28 +228,6 @@ func jobFormHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createJobHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	j := Job{
-		JobName: r.FormValue("job_name"),
-		Schedule: r.FormValue("schedule"),
-		Host: r.FormValue("host"),
-		JobType: r.FormValue("job_type"),
-		Commands: r.FormValue("command"),
-	}
-
-	if err := j.createJob(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-}
-
 
 func main() {
 	dbPath := os.Getenv("RITUAL_DB_PATH")
@@ -213,7 +248,8 @@ func main() {
 
 	http.HandleFunc("GET /jobs", jobsHandler) //Jobs Page
 	http.HandleFunc("GET /jobs/new", jobFormHandler) // New Job Creation Form
-	http.HandleFunc("POST /jobs/new", createJobHandler) // Submit Form
+	http.HandleFunc("POST /jobs/new", createJobHandler) // Submit New Job Form
+	http.HandleFunc("DELETE /jobs/{id}", deleteJobHandler) // Delete Job
 	
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -10,15 +10,15 @@
 
 <section class="card">
     <form class="job-form"
-          hx-post="/jobs"
+          hx-post="/jobs/new"
           hx-target="#form-feedback"
           hx-swap="innerHTML">
 
         <div class="form-row">
             <label for="job_name">Name</label>
             <input type="text"
-                   id="name"
-                   name="name"
+                   id="job_name"
+                   name="job_name"
                    placeholder="Nightly database backup"
                    required
                    autofocus>
@@ -73,9 +73,7 @@
             <div id="form-feedback" class="form-feedback"></div>
             <div class="form-buttons">
                 <a href="/jobs" class="btn btn-ghost">Cancel</a>
-                <button type="submit" 
-                        class="btn btn-primary"
-                        hx-post="/jobs/new">
+                <button type="submit">
                     Create Job
                 </button>
             </div>

@@ -7,5 +7,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     JobType TEXT NOT NULL DEFAULT 'Bash',
     Commands TEXT NOT NULL,
     Created TEXT NOT NULL DEFAULT (datetime('now')),
-    Updated TEXT NOT NULL DEFAULT (datetime('now'))
+    Updated TEXT NOT NULL DEFAULT (datetime('now')),
+    LastRun TEXT DEFAULT NULL,
+    NextRun TEXT DEFAULT NULL
 );

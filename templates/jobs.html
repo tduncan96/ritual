@@ -1,15 +1,11 @@
  {{define "content"}}
+
 <header class="page-header">
     <div>
         <h1>Jobs</h1>
         <p class="subtitle">Scheduled automations and tasks</p>
     </div>
-    <button class="btn btn-primary"
-            hx-get="/jobs/new"
-            hx-target="#job-form-drawer"
-            hx-swap="innerHTML">
-        + New Job
-    </button>
+    <a href="/jobs/new" class="btn btn-primary">+ New Job</a>
 </header>
 
 <div class="filter-bar">
@@ -58,9 +54,9 @@
         {{range .Jobs}}
         <article class="job-row" id="job-{{.ID}}">
             <div class="job-row-main">
-                <div class="job-status-dot status-{{.Status}}"></div>
+                <div class="job-status-dot status-{{.JobStatus}}"></div>
                 <div class="job-identity">
-                    <a href="/jobs/{{.ID}}" class="job-name">{{.Name}}</a>
+                    <a href="/jobs/{{.ID}}" class="job-name">{{.JobName}}</a>
                     <div class="job-meta">
                         <code class="cron">{{.Schedule}}</code>
                         <span class="sep">•</span>
@@ -85,8 +81,6 @@
                         hx-swap="innerHTML">
                     Run now
                 </button>
-                <div class="run-status" id="job-{{.ID}}-status"></div>
-                <button class="btn btn-ghost" aria-label="More actions">⋯</button>
             </div>
         </article>
         {{else}}
@@ -103,5 +97,4 @@
     </div>
 </section>
 
-<div id="job-form-drawer"></div>
 {{end}}

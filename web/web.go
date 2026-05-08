@@ -19,6 +19,7 @@ func loadTemplates() {
 	pages := []string{"home", "jobs", "job_form"}
 	for _, page := range pages {
 		t := template.Must(template.ParseFS(
+			templateFS,
 			"templates/base.html",
 			"templates/"+page+".html",
 		))

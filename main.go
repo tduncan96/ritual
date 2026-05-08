@@ -16,8 +16,8 @@ func main() {
 			port = "8080"
 		}
 	
-	db.InitDB(dbPath)
-	db.DbDontClose()
-	
+	database, _ :=db.InitDB(dbPath)
+	defer db.DbDontClose(database)
+
 	web.Start(port)
 }

@@ -25,7 +25,7 @@ type Job struct {
 var schema string
 var db *sql.DB
 
-func InitDB(path string) {
+func InitDB(path string) (*sql.DB, error) {
 	var err error
 	db, err = sql.Open("sqlite", path)
 	if err != nil {
@@ -39,10 +39,11 @@ func InitDB(path string) {
 	if _, err := db.Exec(schema); err != nil {
 		log.Fatal(err)
 	}
+	return db, nil
 }
 
-func DbDontClose() {
-	defer db.Close()
+func DbDontClose(db *sql.DB) {
+	defer db.Close(db)
 }
 
 func (j *Job) CreateJob() (int64, error) {

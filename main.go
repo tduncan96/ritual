@@ -17,7 +17,9 @@ func main() {
 		}
 	
 	database, _ :=db.InitDB(dbPath)
-	defer db.DbDontClose(database)
+	defer db.Close(database)
+	
+	s := &web.Server{DB: database}
 
-	web.Start(port)
+	s.Start(port)
 }

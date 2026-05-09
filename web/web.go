@@ -1,13 +1,18 @@
 package web
 
 import (
-	"log"
+	"database/sql"
 	"embed"
-	"net/http"
 	"html/template"
-	"strconv"
+	"log"
+	"net/http"
 	"ritual/internal/db"
+	"strconv"
 )
+
+type Server struct {
+	DB *sql.DB
+}
 
 //go:embed templates/*.html
 var templateFS embed.FS
@@ -27,7 +32,7 @@ func loadTemplates() {
 	}
 }
 
-func render(w http.ResponseWriter, page string, data any) {
+func (s *Server) render(w http.ResponseWriter, page string, data any) {
 	t, ok := templates[page]
 	if !ok {
 		http.Error(w, "template not found: "+page, http.StatusInternalServerError)
@@ -39,7 +44,7 @@ func render(w http.ResponseWriter, page string, data any) {
 	}
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
 	err := templates["home"].ExecuteTemplate(w, "base.html", nil)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -47,7 +52,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
     }	
 }
 
-func createJobHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createJobHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -73,7 +78,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -89,32 +94,32 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func jobsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) jobsHandler(w http.ResponseWriter, r *http.Request) {
 	jobs, err := db.GetAllJobs()
 	if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	render(w, "jobs", map[string]any{"Jobs": jobs})
+	s.render(w, "jobs", map[string]any{"Jobs": jobs})
 }
 
-func jobFormHandler(w http.ResponseWriter, r *http.Request) {
+func (s * Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
 	err := templates["job_form"].ExecuteTemplate(w, "base.html", nil)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func Start(port string) {
+func (s *Server) Start(port string) {
 	loadTemplates()
 	http.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
-	http.HandleFunc("GET /{$}", homeHandler) //Home Landing Page
+	http.HandleFunc("GET /{$}", s.homeHandler) //Home Landing Page
 
-	http.HandleFunc("GET /jobs", jobsHandler) //Jobs Page
-	http.HandleFunc("GET /jobs/new", jobFormHandler) // New Job Creation Form
-	http.HandleFunc("POST /jobs/new", createJobHandler) // Submit New Job Form
-	http.HandleFunc("DELETE /jobs/{id}", deleteJobHandler) // Delete Job
+	http.HandleFunc("GET /jobs", s.jobsHandler) //Jobs Page
+	http.HandleFunc("GET /jobs/new", s.jobFormHandler) // New Job Creation Form
+	http.HandleFunc("POST /jobs/new", s.createJobHandler) // Submit New Job Form
+	http.HandleFunc("DELETE /jobs/{id}", s.deleteJobHandler) // Delete Job
 	
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

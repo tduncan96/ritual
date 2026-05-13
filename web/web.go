@@ -85,7 +85,7 @@ func (s *Server) deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		_, err := db.DeleteJob(id)
-			if err != nil {
+		if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 		}
@@ -107,6 +107,7 @@ func (s * Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
 	err := templates["job_form"].ExecuteTemplate(w, "base.html", nil)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 

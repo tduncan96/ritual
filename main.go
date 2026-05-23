@@ -2,8 +2,10 @@ package main
 
 import (
 	"os"
+	"fmt"
 	"ritual/internal/db"
-	"ritual/web"
+	// "ritual/internal/web"
+	"ritual/cmd"
 )
 
 func main() {
@@ -11,15 +13,17 @@ func main() {
 		if dbPath == "" { 
 			dbPath = "./ritual.db" 
 		}
-	port := os.Getenv("RITUAL_PORT")
-		if port == "" {
-			port = "8080"
-		}
-	
-	database, _ :=db.InitDB(dbPath)
-	defer db.Close(database)
-	
-	s := &web.Server{DB: database}
 
-	s.Start(port)
+	database, err := db.InitDB(dbPath)
+	if err != nil {
+		fmt.Print("Database initialization error. Exiting ...")
+		os.Exit(1)
+	}
+	defer db.Close(database)
+
+	cmd.Database = database
+	
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

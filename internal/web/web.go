@@ -66,7 +66,7 @@ func (s *Server) createJobHandler(w http.ResponseWriter, r *http.Request) {
 		JobType: r.FormValue("job_type"),
 		Commands: r.FormValue("command"),
 		LastRun: "Never",
-		NextRun: "Fuck You",
+		NextRun: "Later",
 	}
 
 	_, err := j.CreateJob()
@@ -111,12 +111,14 @@ func (s * Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//go:embed static
+var staticFS embed.FS
+
 func (s *Server) Start(port string) {
 	loadTemplates()
-	http.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	http.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	http.HandleFunc("GET /{$}", s.homeHandler) //Home Landing Page
-
 	http.HandleFunc("GET /jobs", s.jobsHandler) //Jobs Page
 	http.HandleFunc("GET /jobs/new", s.jobFormHandler) // New Job Creation Form
 	http.HandleFunc("POST /jobs/new", s.createJobHandler) // Submit New Job Form

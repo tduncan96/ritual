@@ -129,6 +129,8 @@ func GetJobs(ids []int) ([]Job, error) {
 				&j.Commands, 
 				&j.Created, 
 				&j.Updated,
+				&j.LastRun,
+				&j.NextRun,
 			)
 		if err != nil {
 			return nil, err

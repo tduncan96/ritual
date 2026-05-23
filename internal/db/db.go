@@ -1,24 +1,25 @@
 package db
 
 import (
-	"log"
 	"database/sql"
-	_ "modernc.org/sqlite"
 	_ "embed"
+	"log"
+
+	_ "modernc.org/sqlite"
 )
 
 type Job struct {
-	ID int
-	JobName string
-	Schedule string
-	Host string
-	JobStatus string
-	JobType string
-	Commands string
-	Created string
-	Updated string
-	LastRun string
-	NextRun string
+	ID        int    `toml:"job.id"`
+	JobName   string `toml:"job.name"`
+	Schedule  string `toml:"job.schedule"`
+	Host      string `toml:"job.host"`
+	JobStatus string `toml:"job.status"`
+	JobType   string `toml:"job.type"`
+	Commands  string `toml:"job.commands"`
+	Created   string `toml:"job.created"`
+	Updated   string `toml:"job.updated"`
+	LastRun   string
+	NextRun   string
 }
 
 //go:embed schema.sql
@@ -86,18 +87,18 @@ func GetAllJobs() ([]Job, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	for rows.Next() {
 		var j Job
 		err := rows.Scan(
-			&j.ID, 
-			&j.JobName, 
-			&j.Schedule, 
-			&j.Host, 
+			&j.ID,
+			&j.JobName,
+			&j.Schedule,
+			&j.Host,
 			&j.JobStatus,
-			&j.JobType, 
-			&j.Commands, 
-			&j.Created, 
+			&j.JobType,
+			&j.Commands,
+			&j.Created,
 			&j.Updated,
 			&j.LastRun,
 			&j.NextRun,
@@ -120,14 +121,14 @@ func GetJobs(ids []int) ([]Job, error) {
 		var j Job
 		err := db.QueryRow("SELECT * FROM jobs where id = ?", id).
 			Scan(
-				&j.ID, 
-				&j.JobName, 
-				&j.Schedule, 
-				&j.Host, 
+				&j.ID,
+				&j.JobName,
+				&j.Schedule,
+				&j.Host,
 				&j.JobStatus,
-				&j.JobType, 
-				&j.Commands, 
-				&j.Created, 
+				&j.JobType,
+				&j.Commands,
+				&j.Created,
 				&j.Updated,
 				&j.LastRun,
 				&j.NextRun,
@@ -139,4 +140,3 @@ func GetJobs(ids []int) ([]Job, error) {
 	}
 	return jobs, nil
 }
-

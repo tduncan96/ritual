@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"database/sql"
-	
+
 	"github.com/spf13/cobra"
 )
 

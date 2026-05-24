@@ -14,7 +14,7 @@ type Server struct {
 	DB *sql.DB
 }
 
-//go:embed templates/*.html
+//go:embed templates/*.gohtml
 var templateFS embed.FS
 
 var templates map[string]*template.Template
@@ -25,8 +25,8 @@ func loadTemplates() {
 	for _, page := range pages {
 		t := template.Must(template.ParseFS(
 			templateFS,
-			"templates/base.html",
-			"templates/"+page+".html",
+			"templates/base.gohtml",
+			"templates/"+page+".gohtml",
 		))
 		templates[page] = t
 	}

@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"ritual/internal/db"
-
-	// "ritual/internal/web"
 	"ritual/cmd"
+	"ritual/internal/db"
 )
 
 func main() {

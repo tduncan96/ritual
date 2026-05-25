@@ -9,15 +9,15 @@ import (
 )
 
 type Job struct {
-	ID        int    `toml:"job.id"`
-	JobName   string `toml:"job.name"`
-	Schedule  string `toml:"job.schedule"`
-	Host      string `toml:"job.host"`
-	JobStatus string `toml:"job.status"`
-	JobType   string `toml:"job.type"`
-	Commands  string `toml:"job.commands"`
-	Created   string `toml:"job.created"`
-	Updated   string `toml:"job.updated"`
+	ID        int
+	JobName   string
+	Schedule  string
+	Host      string
+	JobType   string
+	Commands  string
+	JobStatus string
+	Created   string
+	Updated   string
 	LastRun   string
 	NextRun   string
 }

@@ -38,14 +38,14 @@ func (s *Server) render(w http.ResponseWriter, page string, data any) {
 		http.Error(w, "template not found: "+page, http.StatusInternalServerError)
 		return
 	}
-	if err := t.ExecuteTemplate(w, "base.html", data); err != nil {
+	if err := t.ExecuteTemplate(w, "base.gohtml", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
-	err := templates["home"].ExecuteTemplate(w, "base.html", nil)
+	err := templates["home"].ExecuteTemplate(w, "base.gohtml", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,7 +104,7 @@ func (s *Server) jobsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
-	err := templates["job_form"].ExecuteTemplate(w, "base.html", nil)
+	err := templates["job_form"].ExecuteTemplate(w, "base.gohtml", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -1,4 +1,4 @@
-package io
+package transfer
 
 import (
 	"os"
@@ -101,7 +101,7 @@ func jobsToToml(ids []int) error {
 			return err
 		}
 
-		if err := os.WriteFile(filepath.Join(TomlPath, def.JobName, ".toml"), tomlData, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(TomlPath, def.JobName + ".toml"), tomlData, 0644); err != nil {
 			return err
 		}
 	}

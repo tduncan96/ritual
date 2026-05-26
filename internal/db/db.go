@@ -44,7 +44,7 @@ func InitDB(path string) (*sql.DB, error) {
 }
 
 func Close(db *sql.DB) {
-	defer db.Close()
+	db.Close()
 }
 
 func (j *Job) CreateJob() (int64, error) {

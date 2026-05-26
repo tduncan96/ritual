@@ -1,7 +1,8 @@
-package internal
+package io
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"ritual/internal/db"
@@ -47,9 +48,9 @@ func GetTomlFiles() ([]string, error) {
 	return fileList, nil
 }
 
-func tomlToJob(file string) (int64, error) {
+func TomlToJob(file string) (int64, error) {
 	tomlData, err := os.ReadFile(file)
-	if err != nil{
+	if err != nil {
 		return 0, err
 	}
 
@@ -57,18 +58,18 @@ func tomlToJob(file string) (int64, error) {
 	if err := sushi.Unmarshal(tomlData, &def); err != nil {
 		return 0, err
 	}
-	
+
 	job := db.Job{
-		JobName: def.JobName,
-		Schedule: def.Schedule,
-		Host: def.Host,
-		JobType: def.JobType,
-		Commands: def.Commands,
+		JobName:   def.JobName,
+		Schedule:  def.Schedule,
+		Host:      def.Host,
+		JobType:   def.JobType,
+		Commands:  def.Commands,
 		JobStatus: "Active",
-		Created: time.Now().UTC().Format("2006-01-02 15:04:05"),
-		Updated: time.Now().UTC().Format("2006-01-02 15:04:05"),
-		LastRun: "Never",
-		NextRun: "Never",
+		Created:   time.Now().UTC().Format("2006-01-02 15:04:05"),
+		Updated:   time.Now().UTC().Format("2006-01-02 15:04:05"),
+		LastRun:   "Never",
+		NextRun:   "Never",
 	}
 
 	id, err := job.CreateJob()
@@ -79,8 +80,8 @@ func tomlToJob(file string) (int64, error) {
 	return id, nil
 }
 
-func jobsToToml (ids []int) (error) {
-	
+func jobsToToml(ids []int) error {
+
 	jobs, err := db.GetJobs(ids)
 	if err != nil {
 		return err
@@ -88,10 +89,10 @@ func jobsToToml (ids []int) (error) {
 
 	for _, job := range jobs {
 		def := JobDef{
-			JobName: job.JobName,
+			JobName:  job.JobName,
 			Schedule: job.Schedule,
-			Host: job.Host,
-			JobType: job.JobType,
+			Host:     job.Host,
+			JobType:  job.JobType,
 			Commands: job.Commands,
 		}
 
@@ -100,7 +101,7 @@ func jobsToToml (ids []int) (error) {
 			return err
 		}
 
-		if err := os.WriteFile(TomlPath + def.JobName + ".toml", tomlData, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(TomlPath, def.JobName, ".toml"), tomlData, 0644); err != nil {
 			return err
 		}
 	}

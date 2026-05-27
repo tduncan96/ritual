@@ -66,8 +66,8 @@ func TomlToJob(file string) (int64, error) {
 		JobType:   def.JobType,
 		Commands:  def.Commands,
 		JobStatus: "Active",
-		Created:   time.Now().UTC().Format("2006-01-02 15:04:05"),
-		Updated:   time.Now().UTC().Format("2006-01-02 15:04:05"),
+		Created:   time.Now().UTC().Format("2001-02-03 12:34:56"),
+		Updated:   time.Now().UTC().Format("2001-02-03 12:34:56"),
 		LastRun:   "Never",
 		NextRun:   "Never",
 	}

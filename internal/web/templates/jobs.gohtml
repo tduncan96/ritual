@@ -51,50 +51,53 @@
         <span class="link-subtle" id="job-count">— jobs</span>
     </div>
     <div class="card-body" id="job-list">
-        {{range .Jobs}}
-        <article class="job-row" id="job-{{.ID}}">
-            <div class="job-row-main">
-                <div class="job-status-dot status-{{.JobStatus}}"></div>
-                <div class="job-identity">
-                    <a href="/jobs/{{.ID}}" class="job-name">{{.JobName}}</a>
-                    <div class="job-meta">
-                        <code class="cron">{{.Schedule}}</code>
-                        <span class="sep">•</span>
-                        <span>{{.Host}}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="job-row-timing">
-                <div class="timing-block">
-                    <div class="timing-label">Last run</div>
-                    <div class="timing-value">{{.LastRun}}</div>
-                </div>
-                <div class="timing-block">
-                    <div class="timing-label">Next run</div>
-                    <div class="timing-value">{{.NextRun}}</div>
-                </div>
-            </div>
-            <div class="job-row-actions">
-                <button class="btn btn-secondary"
-                        hx-post="/jobs/{{.ID}}/run"
-                        hx-target="#job-{{.ID}}-status"
-                        hx-swap="innerHTML">
-                    Run now
-                </button>
-            </div>
-        </article>
-        {{else}}
-        <div class="empty-state">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-            </svg>
-            <p>No jobs configured. Create your first job to get started.</p>
-        </div>
-        {{end}}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Schedule</th>
+                    <th>Host</th>
+                    <th>Last run</th>
+                    <th>Next run</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Jobs}}
+                <tr id="job-{{.ID}}">
+                    <td>
+                        <span class="job-status-dot status-{{.JobStatus}}"></span>
+                        <a href="/jobs/{{.ID}}" class="job-name">{{.JobName}}</a>
+                    </td>
+                    <td><code class="cron">{{.Schedule}}</code></td>
+                    <td>{{.Host}}</td>
+                    <td>{{.LastRun}}</td>
+                    <td>{{.NextRun}}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm"
+                                hx-post="/jobs/{{.ID}}/run"
+                                hx-target="#job-{{.ID}}-status"
+                                hx-swap="innerHTML">
+                            Run now
+                        </button>
+                    </td>
+                </tr>
+                {{else}}
+                <tr><td colspan="6">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                    </svg>
+                    <div class="empty-state">No jobs configured. Create your first job to get started.</div>
+                </td></tr>
+                {{end}}
+            </tbody>
+        </table>
     </div>
 </section>
 
 {{end}}
+
+

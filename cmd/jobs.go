@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"ritual/internal/transfer"
+	"ritual/internal/migration"
 
 	"github.com/spf13/cobra"
 )

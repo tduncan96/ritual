@@ -140,3 +140,24 @@ func GetJobs(ids []int) ([]Job, error) {
 	}
 	return jobs, nil
 }
+
+func GetJob(id int) (Job, error) {
+	var job Job
+	err := db.QueryRow("SELECT * FROM jobs where id = ?", id).Scan(
+		&job.ID,
+		&job.JobName,
+		&job.Schedule,
+		&job.Host,
+		&job.JobStatus,
+		&job.JobType,
+		&job.Commands,
+		&job.Created,
+		&job.Updated,
+		&job.LastRun,
+		&job.NextRun,
+	)
+	if err != nil {
+		return Job{}, err
+	}
+	return job, nil
+}

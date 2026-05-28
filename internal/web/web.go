@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"embed"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"ritual/internal/db"
 	"strconv"
+	"strings"
 )
 
 type Server struct {
@@ -21,12 +23,22 @@ var templates map[string]*template.Template
 
 func loadTemplates() {
 	templates = make(map[string]*template.Template)
-	pages := []string{"home", "jobs", "job_form"}
-	for _, page := range pages {
+
+	entries, err := fs.ReadDir(templateFS, "templates")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if name == "base.gohtml" {
+			continue
+		}
+		page := strings.TrimSuffix(name, ".gohtml")
 		t := template.Must(template.ParseFS(
 			templateFS,
 			"templates/base.gohtml",
-			"templates/"+page+".gohtml",
+			"templates/"+name,
 		))
 		templates[page] = t
 	}
@@ -111,6 +123,16 @@ func (s *Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	job, err := db.GetJob(id)
+	s.render(w, "job", job)
+}
+
 //go:embed static
 var staticFS embed.FS
 
@@ -118,10 +140,11 @@ func (s *Server) Start(port string) {
 	loadTemplates()
 	http.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
-	http.HandleFunc("GET /{$}", s.homeHandler)               //Home Landing Page
-	http.HandleFunc("GET /jobs", s.jobsHandler)              //Jobs Page
+	http.HandleFunc("GET /{$}", s.homeHandler)               // Home Landing Page
+	http.HandleFunc("GET /jobs", s.jobsHandler)              // Jobs Page
 	http.HandleFunc("GET /jobs/new", s.jobFormHandler)       // New Job Creation Form
 	http.HandleFunc("POST /jobs/new", s.createJobHandler)    // Submit New Job Form
+	http.HandleFunc("GET /jobs/{id}", s.jobHandler)          // Individual Job page
 	http.HandleFunc("DELETE /jobs/{id}", s.deleteJobHandler) // Delete Job
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))

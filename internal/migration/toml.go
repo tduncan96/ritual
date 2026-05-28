@@ -1,9 +1,8 @@
-package transfer
+package migration
 
 import (
 	"os"
 	"path/filepath"
-	"time"
 
 	"ritual/internal/db"
 
@@ -65,11 +64,6 @@ func TomlToJob(file string) (int64, error) {
 		Host:      def.Host,
 		JobType:   def.JobType,
 		Commands:  def.Commands,
-		JobStatus: "Active",
-		Created:   time.Now().UTC().Format("2001-02-03 12:34:56"),
-		Updated:   time.Now().UTC().Format("2001-02-03 12:34:56"),
-		LastRun:   "Never",
-		NextRun:   "Never",
 	}
 
 	id, err := job.CreateJob()

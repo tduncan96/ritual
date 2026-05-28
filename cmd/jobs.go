@@ -18,7 +18,7 @@ var importTomlCmd = &cobra.Command{
 	Short: ".toml I/O for Jobs",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := transfer.TomlToJob(args[0])
+		id, err := migration.TomlToJob(args[0])
 		if err != nil {
 			return err
 		}

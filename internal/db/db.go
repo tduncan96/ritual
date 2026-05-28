@@ -54,11 +54,8 @@ func (j *Job) CreateJob() (int64, error) {
 		j.JobName,
 		j.Schedule,
 		j.Host,
-		j.JobStatus,
 		j.JobType,
 		j.Commands,
-		j.LastRun,
-		j.NextRun,
 	)
 	if err != nil {
 		return 0, err

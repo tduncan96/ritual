@@ -10,6 +10,7 @@ import (
 	"ritual/internal/db"
 	"strconv"
 	"strings"
+	"bytes"
 )
 
 type Server struct {
@@ -44,24 +45,24 @@ func loadTemplates() {
 	}
 }
 
-func (s *Server) render(w http.ResponseWriter, page string, data any) {
-	t, ok := templates[page]
+func (s *Server) render(w http.ResponseWriter, templateName string, data any) {
+	t, ok := templates[templateName]
 	if !ok {
-		http.Error(w, "template not found: "+page, http.StatusInternalServerError)
+		http.Error(w, "template not found: "+templateName, http.StatusInternalServerError)
 		return
 	}
-	if err := t.ExecuteTemplate(w, "base.gohtml", data); err != nil {
+
+	var buf bytes.Buffer
+	if err := t.ExecuteTemplate(&buf, "base.gohtml", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	buf.WriteTo(w)
 }
 
 func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
-	err := templates["home"].ExecuteTemplate(w, "base.gohtml", nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	s.render(w, "home", nil)
 }
 
 func (s *Server) createJobHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,11 +117,7 @@ func (s *Server) jobsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
-	err := templates["job_form"].ExecuteTemplate(w, "base.gohtml", nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	s.render(w, "job_form", nil)
 }
 
 func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +127,10 @@ func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	job, err := db.GetJob(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}	
 	s.render(w, "job", job)
 }
 

@@ -49,8 +49,8 @@ func Close(db *sql.DB) {
 
 func (j *Job) CreateJob() (int64, error) {
 	result, err := db.Exec(
-		`INSERT INTO jobs (JobName, Schedule, Host, JobStatus, JobType, Commands, LastRun, NextRun) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO jobs (JobName, Schedule, Host, JobType, Commands) 
+		VALUES (?, ?, ?, ?, ?)`,
 		j.JobName,
 		j.Schedule,
 		j.Host,

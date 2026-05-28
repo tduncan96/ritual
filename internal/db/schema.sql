@@ -8,6 +8,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     Commands TEXT NOT NULL,
     Created TEXT NOT NULL DEFAULT (datetime('now')),
     Updated TEXT NOT NULL DEFAULT (datetime('now')),
-    LastRun TEXT DEFAULT NULL,
-    NextRun TEXT DEFAULT NULL
+    LastRun TEXT DEFAULT 'Never',
+    NextRun TEXT DEFAULT 'I should put some math here to calc out the next run or something'
 );

@@ -2,6 +2,7 @@
 1) Cron integration
     - Cronjob importing
     - Cron parsing
+    - robfig/cron
 2) Job command execution
     - exec.go
 3) SSH

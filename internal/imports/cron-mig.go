@@ -22,9 +22,9 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 	if err != nil {
 		return []int64{}, fmt.Errorf("error getting stdout of 'hostname': %w", err)
 	}
-	if host != string(out) { //
+	if host != strings.TrimSpace(string(out)) { //
 		exec.Command("ssh", host) // I'll need to go back and actually do something with this
-	} //
+	}
 
 	crontab := exec.Command("crontab", "-l")
 	out, err = crontab.Output()
@@ -41,6 +41,7 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 	}
 
 	env := make(map[string]string)
+	i := 1
 	for _, line := range lines {
 		fields := strings.Fields(line)
 		var sched, cmd string
@@ -50,22 +51,23 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 			sched, cmd = strings.Join(fields[:2], " "), strings.Join(fields[2:], " ")
 		// ex. @monthly /usr/.local/bin/script.sh
 		case strings.HasPrefix(fields[0], "@"):
-			sched, cmd = fields[0], strings.Join(fields[:1], " ")
+			sched, cmd = fields[0], strings.Join(fields[1:], " ")
 		// ex. 0 * * * * /usr/.local/bin/script.sh
 		default:
 			if len(fields) < 6 {
 				fmt.Printf("error parsing line: %v", line)
 				continue
 			}
-			sched, cmd = strings.Join(fields[:5], " "), fields[6]
+			sched, cmd = strings.Join(fields[5:], " "), fields[6]
 		}
 
 		if _, err := cron.ParseStandard(sched); err != nil {
-			if envRe.MatchString("^[a-zA-Z_]") == true {
-				envExp := strings.SplitN(line, "=", 1)
+			if envRe.MatchString(line) == true {
+				envExp := strings.SplitN(line, "=", 2)
 				key := envExp[0]
 				value := envExp[1]
 				env[key] = value
+				continue
 			} else {
 				fmt.Printf("error parsing line: %v", line)
 				continue
@@ -73,7 +75,6 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 		}
 
 		lineEnv := env
-		i := 1
 		num := strconv.Itoa(i)
 		job := db.Job{
 			JobName:  strings.Join([]string{host, "crontab", num}, "_"),

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	_ "embed"
 	"fmt"
@@ -48,6 +49,9 @@ func Close(db *sqlx.DB) {
 	db.Close()
 }
 
+var _ driver.Valuer = EnvMap{}
+var _ sql.Scanner = (*EnvMap)(nil)
+
 func envMapToString(envMap map[string]string) (envString string) {
 	if len(envMap) > 0 {
 		var envStrings []string
@@ -61,21 +65,27 @@ func envMapToString(envMap map[string]string) (envString string) {
 	}
 	return envString
 }
-func (em EnvMap) Value() driver.Value {
-	return envMapToString(em)
+func (em EnvMap) Value() (driver.Value, error) {
+	return envMapToString(em), nil
 }
 
 func envStringToMap(envString string) (envMap map[string]string) {
-	for _, line := range envString {
-		envExp := strings.SplitN(string(line), "=", 1)
-		key := envExp[0]
-		value := envExp[1]
-		envMap[key] = value
+	envMap = make(map[string]string)
+	for _, line := range strings.Split(envString, "\n") {
+		if line == "" {
+				continue
+		}
+		envExp := strings.SplitN(line, "=", 2)
+		if len(envExp) != 2 {
+				continue
+		}
+		envMap[envExp[0]] = envExp[1]
 	}
 	return envMap
 }
-func (em *EnvMap) Scan(src any) {
+func (em *EnvMap) Scan(src any) error {
 	*em = envStringToMap(src.(string))
+	return nil
 }
 
 func (j *Job) CreateJob() (int64, error) {
@@ -87,7 +97,7 @@ func (j *Job) CreateJob() (int64, error) {
 		j.Host,
 		j.JobType,
 		j.Commands,
-		envMapToString(j.Env),
+		j.Env,
 	)
 	if err != nil {
 		return 0, err

@@ -1,61 +1,93 @@
 package db
 
 import (
-	"database/sql"
+	"database/sql/driver"
 	_ "embed"
-	"log"
+	"fmt"
+	"strings"
 
+	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
 
+type EnvMap map[string]string
+
 type Job struct {
-	ID        int
-	JobName   string
-	Schedule  string
-	Host      string
-	JobType   string
-	Commands  string
-	JobStatus string
-	Created   string
-	Updated   string
-	LastRun   string
-	NextRun   string
+	ID        int    `db:"ID"`
+	JobName   string `db:"JobName" toml:"name"`
+	Schedule  string `db:"Schedule" toml:"schedule"`
+	Host      string `db:"Host" toml:"host"`
+	JobType   string `db:"JobType" toml:"type"`
+	Commands  string `db:"Commands" toml:"commands"`
+	Env       EnvMap `db:"Env"`
+	JobStatus string `db:"JobStatus"`
+	Created   string `db:"Created"`
+	Updated   string `db:"Updated"`
+	LastRun   string `db:"LastRun"`
+	NextRun   string `db:"NextRun"`
 }
 
 //go:embed schema.sql
 var schema string
-var db *sql.DB
+var db *sqlx.DB
 
-func InitDB(path string) (*sql.DB, error) {
-	var err error
-	db, err = sql.Open("sqlite", path)
+func Init(path string) (*sqlx.DB, error) {
+	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"
+	db, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
-	db.Exec("PRAGMA journal_mode=WAL;")
-	db.Exec("PRAGMA foreign_keys=ON;")
 	if _, err := db.Exec(schema); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
+
 	return db, nil
 }
 
-func Close(db *sql.DB) {
+func Close(db *sqlx.DB) {
 	db.Close()
+}
+
+func envMapToString(envMap map[string]string) (envString string) {
+	if len(envMap) > 0 {
+		var envStrings []string
+		for key, value := range envMap {
+			envLine := key + "=" + value
+			envStrings = append(envStrings, envLine)
+		}
+		envString = strings.Join(envStrings, "\n")
+	} else {
+		envString = ""
+	}
+	return envString
+}
+func (em EnvMap) Value() driver.Value {
+	return envMapToString(em)
+}
+
+func envStringToMap(envString string) (envMap map[string]string) {
+	for _, line := range envString {
+		envExp := strings.SplitN(string(line), "=", 1)
+		key := envExp[0]
+		value := envExp[1]
+		envMap[key] = value
+	}
+	return envMap
+}
+func (em *EnvMap) Scan(src any) {
+	*em = envStringToMap(src.(string))
 }
 
 func (j *Job) CreateJob() (int64, error) {
 	result, err := db.Exec(
-		`INSERT INTO jobs (JobName, Schedule, Host, JobType, Commands) 
-		VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO jobs (JobName, Schedule, Host, JobType, Commands, Env) 
+		VALUES (?, ?, ?, ?, ?, ?)`,
 		j.JobName,
 		j.Schedule,
 		j.Host,
 		j.JobType,
 		j.Commands,
+		envMapToString(j.Env),
 	)
 	if err != nil {
 		return 0, err
@@ -69,6 +101,26 @@ func (j *Job) CreateJob() (int64, error) {
 	return id, nil
 }
 
+func (j *Job) UpdateJob() (int64, error) {
+	result, err := db.NamedExec(
+		`UPDATE jobs SET
+				JobName  = :JobName,
+				Schedule = :Schedule,
+				Host     = :Host,
+				JobType  = :JobType,
+				Commands = :Commands,
+				Env      = :Env,
+				JobStatus = :JobStatus,
+				Updated  = datetime('now')
+				WHERE ID = :ID`,
+		j,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func DeleteJob(id int) (int64, error) {
 	result, err := db.Exec("DELETE FROM jobs WHERE ID = ?", id)
 	if err != nil {
@@ -77,84 +129,39 @@ func DeleteJob(id int) (int64, error) {
 	return result.RowsAffected()
 }
 
-func GetAllJobs() ([]Job, error) {
-	var jobs []Job
-	rows, err := db.Query("SELECT * FROM jobs")
+func GetJob(id int) (Job, error) {
+	var job Job
+	err := db.Get(&job, "SELECT * FROM Jobs WHERE Id = ?", id)
 	if err != nil {
-		return nil, err
+		return Job{}, err
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var j Job
-		err := rows.Scan(
-			&j.ID,
-			&j.JobName,
-			&j.Schedule,
-			&j.Host,
-			&j.JobStatus,
-			&j.JobType,
-			&j.Commands,
-			&j.Created,
-			&j.Updated,
-			&j.LastRun,
-			&j.NextRun,
-		)
-		if err != nil {
-			return nil, err
-		}
-		jobs = append(jobs, j)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return jobs, nil
+	return job, nil
 }
 
 func GetJobs(ids []int) ([]Job, error) {
 	var jobs []Job
 	for _, id := range ids {
-		var j Job
-		err := db.QueryRow("SELECT * FROM jobs where id = ?", id).
-			Scan(
-				&j.ID,
-				&j.JobName,
-				&j.Schedule,
-				&j.Host,
-				&j.JobStatus,
-				&j.JobType,
-				&j.Commands,
-				&j.Created,
-				&j.Updated,
-				&j.LastRun,
-				&j.NextRun,
-			)
+		job, err := GetJob(id)
 		if err != nil {
-			return nil, err
+			fmt.Printf("error getting job ID: %v", id)
+			continue
 		}
-		jobs = append(jobs, j)
+		jobs = append(jobs, job)
 	}
 	return jobs, nil
 }
 
-func GetJob(id int) (Job, error) {
-	var job Job
-	err := db.QueryRow("SELECT * FROM jobs where id = ?", id).Scan(
-		&job.ID,
-		&job.JobName,
-		&job.Schedule,
-		&job.Host,
-		&job.JobStatus,
-		&job.JobType,
-		&job.Commands,
-		&job.Created,
-		&job.Updated,
-		&job.LastRun,
-		&job.NextRun,
-	)
+func GetAllJobs() ([]Job, error) {
+	var jobs []Job
+	var ids []int
+	err := db.Select(&ids, "SELECT Id FROM Jobs")
 	if err != nil {
-		return Job{}, err
+		return []Job{}, err
 	}
-	return job, nil
+	jobs, err = GetJobs(ids)
+	if err != nil {
+		return []Job{}, err
+	}
+
+	return jobs, nil
 }

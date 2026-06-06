@@ -13,7 +13,7 @@ func main() {
 		dbPath = "./ritual.db"
 	}
 
-	database, err := db.InitDB(dbPath)
+	database, err := db.Init(dbPath)
 	if err != nil {
 		fmt.Print("Database initialization error. Exiting ...")
 		os.Exit(1)

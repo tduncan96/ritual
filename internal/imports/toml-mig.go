@@ -1,4 +1,4 @@
-package migration
+package imports
 
 import (
 	"os"
@@ -8,14 +8,6 @@ import (
 
 	sushi "github.com/BurntSushi/toml"
 )
-
-type JobDef struct {
-	JobName  string `toml:"name"`
-	Schedule string `toml:"schedule"`
-	Host     string `toml:"host"`
-	JobType  string `toml:"type"`
-	Commands string `toml:"commands"`
-}
 
 var TomlPath string = getTomlPath()
 
@@ -53,17 +45,17 @@ func TomlToJob(file string) (int64, error) {
 		return 0, err
 	}
 
-	var def JobDef
+	var def db.Job
 	if err := sushi.Unmarshal(tomlData, &def); err != nil {
 		return 0, err
 	}
 
 	job := db.Job{
-		JobName:   def.JobName,
-		Schedule:  def.Schedule,
-		Host:      def.Host,
-		JobType:   def.JobType,
-		Commands:  def.Commands,
+		JobName:  def.JobName,
+		Schedule: def.Schedule,
+		Host:     def.Host,
+		JobType:  def.JobType,
+		Commands: def.Commands,
 	}
 
 	id, err := job.CreateJob()
@@ -75,14 +67,13 @@ func TomlToJob(file string) (int64, error) {
 }
 
 func jobsToToml(ids []int) error {
-
 	jobs, err := db.GetJobs(ids)
 	if err != nil {
 		return err
 	}
 
 	for _, job := range jobs {
-		def := JobDef{
+		def := db.Job{
 			JobName:  job.JobName,
 			Schedule: job.Schedule,
 			Host:     job.Host,
@@ -95,7 +86,7 @@ func jobsToToml(ids []int) error {
 			return err
 		}
 
-		if err := os.WriteFile(filepath.Join(TomlPath, def.JobName + ".toml"), tomlData, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(TomlPath, def.JobName+".toml"), tomlData, 0644); err != nil {
 			return err
 		}
 	}

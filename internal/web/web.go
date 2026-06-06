@@ -1,7 +1,7 @@
 package web
 
 import (
-	"database/sql"
+	"bytes"
 	"embed"
 	"html/template"
 	"io/fs"
@@ -10,11 +10,12 @@ import (
 	"ritual/internal/db"
 	"strconv"
 	"strings"
-	"bytes"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Server struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
 //go:embed templates/*.gohtml

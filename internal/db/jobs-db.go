@@ -52,7 +52,7 @@ func Close(db *sqlx.DB) {
 var _ driver.Valuer = EnvMap{}
 var _ sql.Scanner = (*EnvMap)(nil)
 
-func envMapToString(envMap map[string]string) (envString string) {
+func EnvMapToString(envMap map[string]string) (envString string) {
 	if len(envMap) > 0 {
 		var envStrings []string
 		for key, value := range envMap {
@@ -66,36 +66,35 @@ func envMapToString(envMap map[string]string) (envString string) {
 	return envString
 }
 func (em EnvMap) Value() (driver.Value, error) {
-	return envMapToString(em), nil
+	return EnvMapToString(em), nil
 }
 
-func envStringToMap(envString string) (envMap map[string]string) {
+func EnvStringToMap(envString string) (envMap map[string]string) {
 	envMap = make(map[string]string)
 	for _, line := range strings.Split(envString, "\n") {
 		if line == "" {
-				continue
+			continue
 		}
 		envExp := strings.SplitN(line, "=", 2)
 		if len(envExp) != 2 {
-				continue
+			continue
 		}
 		envMap[envExp[0]] = envExp[1]
 	}
 	return envMap
 }
 func (em *EnvMap) Scan(src any) error {
-	*em = envStringToMap(src.(string))
+	*em = EnvStringToMap(src.(string))
 	return nil
 }
 
 func (j *Job) CreateJob() (int64, error) {
 	result, err := db.Exec(
-		`INSERT INTO jobs (JobName, Schedule, Host, JobType, Commands, Env) 
-		VALUES (?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO jobs (JobName, Schedule, Host, Commands, Env) 
+		VALUES (?, ?, ?, ?, ?)`,
 		j.JobName,
 		j.Schedule,
 		j.Host,
-		j.JobType,
 		j.Commands,
 		j.Env,
 	)

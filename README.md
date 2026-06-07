@@ -1,18 +1,13 @@
 ## To Do List
 1) Cron integration
-    - Cronjob importing
-    - Cron parsing
-    - robfig/cron
-2) Job command execution
-    - exec.go
-3) SSH
-    - Host saving
-4) Run history
-5) Job editing
-    - Update job
-    - Web POST method
-6) Authentication
-7) Config input and parse
-8) Alerts
-9) Git TOML exports
-    - Git repo db
+    - Cron service
+1) SSH
+   - Host saving
+1) Run history
+1) Job editing
+   - Web POST method
+1) Authentication
+1) Config input and parse
+1) Alerts
+1) Git TOML exports
+   - Git repo db

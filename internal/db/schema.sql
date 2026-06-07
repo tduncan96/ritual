@@ -12,3 +12,11 @@ CREATE TABLE IF NOT EXISTS Jobs (
     LastRun TEXT NOT NULL DEFAULT 'Never',
     NextRun TEXT NOT NULL DEFAULT 'I should put some math here to calc out the next run or something'
 );
+
+CREATE TABLE IF NOT EXISTS Runs (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    JobID INTEGER FOREIGN KEY ON DELETE SET NULL,
+    JobName TEXT NOT NULL,
+    RunTimestamp TEXT NOT NULL,
+    ExitCode INTEGER NOT NULL
+)

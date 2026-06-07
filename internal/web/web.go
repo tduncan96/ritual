@@ -20,7 +20,6 @@ type Server struct {
 
 //go:embed templates/*.gohtml
 var templateFS embed.FS
-
 var templates map[string]*template.Template
 
 func loadTemplates() {
@@ -79,8 +78,6 @@ func (s *Server) createJobHandler(w http.ResponseWriter, r *http.Request) {
 		JobStatus: "Active",
 		JobType:   r.FormValue("job_type"),
 		Commands:  r.FormValue("command"),
-		LastRun:   "Never",
-		NextRun:   "Later",
 	}
 
 	_, err := j.CreateJob()
@@ -131,7 +128,7 @@ func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}	
+	}
 	s.render(w, "job", job)
 }
 

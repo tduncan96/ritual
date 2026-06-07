@@ -1,4 +1,4 @@
-package imports
+package jobio
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/robfig/cron/v3"
+	robfig "github.com/robfig/cron/v3"
 
 	"ritual/internal/db"
 )
@@ -63,7 +63,7 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 			sched, cmd = strings.Join(fields[:5], " "), strings.Join(fields[5:], " ")
 		}
 
-		if _, err := cron.ParseStandard(sched); err != nil {
+		if _, err := robfig.ParseStandard(sched); err != nil {
 			if envRe.MatchString(line) == true {
 				envExp := strings.SplitN(line, "=", 2)
 				key := envExp[0]

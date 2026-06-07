@@ -7,7 +7,7 @@ import (
 
 	"ritual/internal/db"
 	"ritual/internal/exec"
-	"ritual/internal/imports"
+	"ritual/internal/jobio"
 
 	"github.com/spf13/cobra"
 )
@@ -22,7 +22,7 @@ var importTomlCmd = &cobra.Command{
 	Short: ".toml file job import",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := imports.TomlToJob(args[0])
+		id, err := jobio.TomlToJob(args[0])
 		if err != nil {
 			return err
 		}
@@ -33,11 +33,11 @@ var importTomlCmd = &cobra.Command{
 
 var importCronCmd = &cobra.Command{
 	Use:   "cron <host>",
-	Short: "crontab job imports",
+	Short: "crontab job jobio",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		host := args[0]
-		ids, err := imports.CrontabToJobs(host)
+		ids, err := jobio.CrontabToJobs(host)
 		if err != nil {
 			return err
 		}

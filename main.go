@@ -8,12 +8,7 @@ import (
 )
 
 func main() {
-	dbPath := os.Getenv("RITUAL_DB_PATH")
-	if dbPath == "" {
-		dbPath = "./ritual.db"
-	}
-
-	database, err := db.Init(dbPath)
+	database, err := db.Init()
 	if err != nil {
 		fmt.Print("Database initialization error. Exiting ...")
 		os.Exit(1)

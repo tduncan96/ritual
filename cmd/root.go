@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"github.com/jmoiron/sqlx"
 	"github.com/spf13/cobra"
 )
-
-var Database *sqlx.DB
 
 var rootCmd = &cobra.Command{
 	Use:   "ritual",

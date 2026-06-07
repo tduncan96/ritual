@@ -43,9 +43,12 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 	env := make(map[string]string)
 	i := 1
 	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
 		fields := strings.Fields(line)
 		var sched, cmd string
-		switch {
+		switch {		
 		// ex. @every 5m /usr/.local/bin/script.sh
 		case strings.HasPrefix(fields[0], "@every"):
 			sched, cmd = strings.Join(fields[:2], " "), strings.Join(fields[2:], " ")
@@ -55,10 +58,9 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 		// ex. 0 * * * * /usr/.local/bin/script.sh
 		default:
 			if len(fields) < 6 {
-				fmt.Printf("error parsing line: %v", line)
 				continue
 			}
-			sched, cmd = strings.Join(fields[5:], " "), fields[6]
+			sched, cmd = strings.Join(fields[:5], " "), strings.Join(fields[5:], " ")
 		}
 
 		if _, err := cron.ParseStandard(sched); err != nil {
@@ -74,7 +76,10 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 			}
 		}
 
-		lineEnv := env
+		lineEnv := make(db.EnvMap, len(env))
+		for k, v := range env {
+			lineEnv[k] = v
+		}
 		num := strconv.Itoa(i)
 		job := db.Job{
 			JobName:  strings.Join([]string{host, "crontab", num}, "_"),
@@ -92,6 +97,5 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 		fmt.Printf("job %v created", strconv.Itoa(int(id)))
 		i++
 	}
-
 	return ids, nil
 }

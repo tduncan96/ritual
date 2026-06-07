@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 
@@ -9,12 +10,10 @@ import (
 
 func ExecuteJob(job db.Job) error {
 	commands := strings.Split(job.Commands, " ")
-	envVars := strings.Split(db.EnvMapToString(job.Env), "\n")
-
 	cmd := exec.Command(commands[0], commands[1:]...)
-
-	if envVars != nil {
-		cmd.Env = envVars
+	cmd.Env = os.Environ()
+	for k, v := range job.Env {
+		cmd.Env = append(cmd.Env, k+"="+v)
 	}
 
 	if err := cmd.Start(); err != nil {

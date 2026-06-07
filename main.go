@@ -20,8 +20,6 @@ func main() {
 	}
 	defer db.Close(database)
 
-	cmd.Database = database
-
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}

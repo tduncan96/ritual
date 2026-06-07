@@ -28,21 +28,23 @@ type Job struct {
 	NextRun   string `db:"NextRun"`
 }
 
+var JobDB *sqlx.DB
+
 //go:embed schema.sql
 var schema string
-var db *sqlx.DB
 
 func Init(path string) (*sqlx.DB, error) {
 	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"
-	db, err := sqlx.Connect("sqlite", dsn)
+	cnxn, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := db.Exec(schema); err != nil {
+	if _, err := cnxn.Exec(schema); err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	JobDB = cnxn
+	return JobDB, nil
 }
 
 func Close(db *sqlx.DB) {
@@ -89,7 +91,7 @@ func (em *EnvMap) Scan(src any) error {
 }
 
 func (j *Job) CreateJob() (int64, error) {
-	result, err := db.Exec(
+	result, err := JobDB.Exec(
 		`INSERT INTO jobs (JobName, Schedule, Host, Commands, Env) 
 		VALUES (?, ?, ?, ?, ?)`,
 		j.JobName,
@@ -111,7 +113,7 @@ func (j *Job) CreateJob() (int64, error) {
 }
 
 func (j *Job) UpdateJob() (int64, error) {
-	result, err := db.NamedExec(
+	result, err := JobDB.NamedExec(
 		`UPDATE jobs SET
 				JobName  = :JobName,
 				Schedule = :Schedule,
@@ -131,7 +133,7 @@ func (j *Job) UpdateJob() (int64, error) {
 }
 
 func DeleteJob(id int) (int64, error) {
-	result, err := db.Exec("DELETE FROM jobs WHERE ID = ?", id)
+	result, err := JobDB.Exec("DELETE FROM jobs WHERE ID = ?", id)
 	if err != nil {
 		return 0, err
 	}
@@ -140,7 +142,7 @@ func DeleteJob(id int) (int64, error) {
 
 func GetJob(id int) (Job, error) {
 	var job Job
-	err := db.Get(&job, "SELECT * FROM Jobs WHERE Id = ?", id)
+	err := JobDB.Get(&job, "SELECT * FROM Jobs WHERE Id = ?", id)
 	if err != nil {
 		return Job{}, err
 	}
@@ -163,7 +165,7 @@ func GetJobs(ids []int) ([]Job, error) {
 func GetAllJobs() ([]Job, error) {
 	var jobs []Job
 	var ids []int
-	err := db.Select(&ids, "SELECT Id FROM Jobs")
+	err := JobDB.Select(&ids, "SELECT Id FROM Jobs")
 	if err != nil {
 		return []Job{}, err
 	}

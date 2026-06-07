@@ -77,7 +77,7 @@ var createJob = &cobra.Command{
 		newJob.Schedule = args[1]
 		newJob.Host = args[2]
 		newJob.Commands = args[3]
-		if args[4] != "" {
+		if len(args) == 5 {
 			file, err := os.ReadFile(args[4])
 			if err != nil {
 				return fmt.Errorf("error opening env file: %w", err)

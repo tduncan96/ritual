@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"ritual/internal/cron"
 	"ritual/internal/web"
 
@@ -19,13 +17,7 @@ var serveCmd = &cobra.Command{
 			return err
 		}
 		cronRunner.Start()
-		
-		port := os.Getenv("RITUAL_PORT")
-		if port == "" {
-			port = "8080"
-		}
-		s := &web.Server{DB: Database}
-		s.Start(port)
+		web.Serve()
 		return nil
 	},
 }

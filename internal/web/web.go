@@ -10,16 +10,9 @@ import (
 	"ritual/internal/db"
 	"strconv"
 	"strings"
-
-	"github.com/jmoiron/sqlx"
+	"time"
 )
 
-type Server struct {
-	DB *sqlx.DB
-}
-
-//go:embed templates/*.gohtml
-var templateFS embed.FS
 var templates map[string]*template.Template
 
 func loadTemplates() {
@@ -45,7 +38,7 @@ func loadTemplates() {
 	}
 }
 
-func (s *Server) render(w http.ResponseWriter, templateName string, data any) {
+func render(w http.ResponseWriter, templateName string, data any) {
 	t, ok := templates[templateName]
 	if !ok {
 		http.Error(w, "template not found: "+templateName, http.StatusInternalServerError)
@@ -61,11 +54,11 @@ func (s *Server) render(w http.ResponseWriter, templateName string, data any) {
 	buf.WriteTo(w)
 }
 
-func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
-	s.render(w, "home", nil)
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	render(w, "home", nil)
 }
 
-func (s *Server) createJobHandler(w http.ResponseWriter, r *http.Request) {
+func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -89,7 +82,7 @@ func (s *Server) createJobHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) deleteJobHandler(w http.ResponseWriter, r *http.Request) {
+func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -105,20 +98,20 @@ func (s *Server) deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) jobsHandler(w http.ResponseWriter, r *http.Request) {
+func jobsHandler(w http.ResponseWriter, r *http.Request) {
 	jobs, err := db.GetAllJobs()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	s.render(w, "jobs", map[string]any{"Jobs": jobs})
+	render(w, "jobs", map[string]any{"Jobs": jobs})
 }
 
-func (s *Server) jobFormHandler(w http.ResponseWriter, r *http.Request) {
-	s.render(w, "job_form", nil)
+func jobFormHandler(w http.ResponseWriter, r *http.Request) {
+	render(w, "job_form", nil)
 }
 
-func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
+func jobHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -129,22 +122,33 @@ func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	s.render(w, "job", job)
+	render(w, "job", job)
 }
 
 //go:embed static
 var staticFS embed.FS
 
-func (s *Server) Start(port string) {
+//go:embed templates/*.gohtml
+var templateFS embed.FS
+
+func Serve() {
+
 	loadTemplates()
 	http.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
-	http.HandleFunc("GET /{$}", s.homeHandler)               // Home Landing Page
-	http.HandleFunc("GET /jobs", s.jobsHandler)              // Jobs Page
-	http.HandleFunc("GET /jobs/new", s.jobFormHandler)       // New Job Creation Form
-	http.HandleFunc("POST /jobs/new", s.createJobHandler)    // Submit New Job Form
-	http.HandleFunc("GET /jobs/{id}", s.jobHandler)          // Individual Job page
-	http.HandleFunc("DELETE /jobs/{id}", s.deleteJobHandler) // Delete Job
+	http.HandleFunc("GET /{$}", homeHandler)               // Home Landing Page
+	http.HandleFunc("GET /jobs", jobsHandler)              // Jobs Page
+	http.HandleFunc("GET /jobs/new", jobFormHandler)       // New Job Creation Form
+	http.HandleFunc("POST /jobs/new", createJobHandler)    // Submit New Job Form
+	http.HandleFunc("GET /jobs/{id}", jobHandler)          // Individual Job page
+	http.HandleFunc("DELETE /jobs/{id}", deleteJobHandler) // Delete Job
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	srv := &http.Server{
+		Addr:         ":1771",
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	log.Fatal(srv.ListenAndServe())
 }

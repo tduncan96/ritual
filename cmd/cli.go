@@ -47,9 +47,9 @@ var importCronCmd = &cobra.Command{
 }
 
 var runJob = &cobra.Command{
-	Use: "run <id>",
+	Use:   "run <id>",
 	Short: "run the given job now",
-	Args: cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
@@ -68,15 +68,16 @@ var runJob = &cobra.Command{
 }
 
 var createJob = &cobra.Command{
-	Use: "create <job name> <schedule> <host> <commands> <env file>",
+	Use:   "create <job name> <schedule> <host> <commands> <env file>",
 	Short: "create job",
-	Args: cobra.RangeArgs(4, 5),
+	Args:  cobra.RangeArgs(4, 5),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var newJob db.Job
-		newJob.JobName = args[0]
-		newJob.Schedule = args[1]
-		newJob.Host = args[2]
-		newJob.Commands = args[3]
+		newJob := db.Job{
+			JobName:  args[0],
+			Schedule: args[1],
+			Host:     args[2],
+			Commands: args[3],
+		}
 		if len(args) == 5 {
 			file, err := os.ReadFile(args[4])
 			if err != nil {

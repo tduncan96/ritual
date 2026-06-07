@@ -131,7 +131,7 @@ var staticFS embed.FS
 //go:embed templates/*.gohtml
 var templateFS embed.FS
 
-func Serve() {
+func Start() {
 
 	loadTemplates()
 	http.Handle("GET /static/", http.FileServer(http.FS(staticFS)))

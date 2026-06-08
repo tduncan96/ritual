@@ -66,8 +66,20 @@ func (j *Job) UpdateJob() error {
 	return nil
 }
 
+func (j *Job) CalcNextRun() error {
+	next, err := robfig.ParseStandard(j.Schedule)
+	if err != nil {
+		return err
+	}
+	j.NextRun = next.Next(time.Now()).Format(SqlTimeFormat)
+	if err := j.UpdateJob(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func DeleteJob(id int) (int64, error) {
-	result, err := DB.Exec("DELETE FROM jobs WHERE ID = ?", id)
+	result, err := DB.Exec("DELETE FROM jobs WHERE JobId = ?", id)
 	if err != nil {
 		return 0, err
 	}
@@ -76,7 +88,7 @@ func DeleteJob(id int) (int64, error) {
 
 func GetJob(id int) (Job, error) {
 	var job Job
-	err := DB.Get(&job, "SELECT * FROM Jobs WHERE Id = ?", id)
+	err := DB.Get(&job, "SELECT * FROM Jobs WHERE JobId = ?", id)
 	if err != nil {
 		return Job{}, err
 	}
@@ -88,7 +100,7 @@ func GetJobs(ids []int) ([]Job, error) {
 	for _, id := range ids {
 		job, err := GetJob(id)
 		if err != nil {
-			fmt.Printf("error getting job ID: %v", id)
+			fmt.Printf("error getting job JobId: %v", id)
 			continue
 		}
 		jobs = append(jobs, job)
@@ -99,7 +111,7 @@ func GetJobs(ids []int) ([]Job, error) {
 func GetAllJobs() ([]Job, error) {
 	var jobs []Job
 	var ids []int
-	err := DB.Select(&ids, "SELECT Id FROM Jobs")
+	err := DB.Select(&ids, "SELECT JobId FROM Jobs")
 	if err != nil {
 		return []Job{}, err
 	}
@@ -108,18 +120,6 @@ func GetAllJobs() ([]Job, error) {
 		return []Job{}, err
 	}
 	return jobs, nil
-}
-
-func (j *Job) CalcNextRun() error {
-	next, err := robfig.ParseStandard(j.Schedule)
-	if err != nil {
-		return err
-	}
-	j.NextRun = next.Next(time.Now()).Format(SqlTimeFormat)
-	if err := j.UpdateJob(); err != nil {
-		return err
-	}
-	return nil
 }
 
 // EnvMap

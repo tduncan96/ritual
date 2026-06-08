@@ -23,7 +23,7 @@ type Run struct {
 func (run *Run) CreateRun() (int64, error) {
 	result, err := DB.NamedExec(
 		`INSERT INTO Runs (JobId, JobName, Host, StartTime, EndTime, Duration, ExitCode, Logs) 
-		VALUES (:RunId, :JobName, :Host, :StartTime, :EndTime, :Duration, :ExitCode, :Logs)`,
+		VALUES (:JobId, :JobName, :Host, :StartTime, :EndTime, :Duration, :ExitCode, :Logs)`,
 		run,
 	)
 	if err != nil {

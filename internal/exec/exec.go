@@ -12,13 +12,14 @@ import (
 
 func ExecuteJob(job db.Job) error {
 	var errs []error
+	start := time.Now()
 	run := db.Run{
-		JobId:   &job.JobId,
-		JobName: job.JobName,
-		Host:    job.Host,
+		JobId:     &job.JobId,
+		JobName:   job.JobName,
+		Host:      job.Host,
+		StartTime: db.TimeStamp(start),
 	}
 
-	start := time.Now()
 	cmd := exec.Command("sh", "-c", job.Commands)
 	cmd.Env = os.Environ()
 	for k, v := range job.Env {
@@ -39,18 +40,17 @@ func ExecuteJob(job db.Job) error {
 	}
 
 	end := time.Now()
-	job.LastRun = time.Now().Format(db.SqlTimeFormat)
-	if err := job.UpdateJob(); err != nil {
-		errs = append(errs, err)
-	}
-
-	run.StartTime = db.TimeStamp(start)
 	run.EndTime = db.TimeStamp(end)
 	run.Duration = int64(end.Sub(start))
 	run.Logs = string(out)
 
 	id, err := run.CreateRun()
 	if err != nil {
+		errs = append(errs, err)
+	}
+
+	job.LastRun = end.Format(db.SqlTimeFormat)
+	if err := job.UpdateJob(); err != nil {
 		errs = append(errs, err)
 	}
 

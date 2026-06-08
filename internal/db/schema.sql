@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS Jobs (
     JobStatus TEXT NOT NULL DEFAULT 'Active',
     Created TEXT NOT NULL DEFAULT (datetime('now')),
     Updated TEXT NOT NULL DEFAULT (datetime('now')),
-    LastRun TEXT NOT NULL DEFAULT 'Never',
-    NextRun TEXT NOT NULL DEFAULT 'I should put some math here to calc out the next run or something'
+    LastRun TEXT,
+    NextRun TEXT
 );
 
 CREATE TABLE IF NOT EXISTS Runs (

@@ -23,7 +23,8 @@ type Run struct {
 func (run *Run) CreateRun() (int64, error) {
 	result, err := DB.NamedExec(
 		`INSERT INTO Runs (JobId, JobName, Host, StartTime, EndTime, Duration, ExitCode, Logs) 
-		VALUES (:RunId, :JobName, :Host, :StartTime, :EndTime, :Duration, :ExitCode, :Logs)`, run,
+		VALUES (:RunId, :JobName, :Host, :StartTime, :EndTime, :Duration, :ExitCode, :Logs)`,
+		run,
 	)
 	if err != nil {
 		return 0, err
@@ -38,7 +39,7 @@ var _ driver.Valuer = TimeStamp{}
 var _ sql.Scanner = (*TimeStamp)(nil)
 
 func (ts TimeStamp) Value() (driver.Value, error) {
-	return time.Time(ts).UTC().Format(sqliteTimeFormat), nil
+	return time.Time(ts).UTC().Format(SqlTimeFormat), nil
 }
 
 func (ts *TimeStamp) Scan(src any) error {
@@ -46,7 +47,7 @@ func (ts *TimeStamp) Scan(src any) error {
 	if !ok {
 		return fmt.Errorf("TimeStamp.Scan: expected string, got %T", src)
 	}
-	parsed, err := time.Parse(sqliteTimeFormat, s)
+	parsed, err := time.Parse(SqlTimeFormat, s)
 	if err != nil {
 		return err
 	}

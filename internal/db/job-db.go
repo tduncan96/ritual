@@ -5,6 +5,9 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
+	"time"
+
+	robfig "github.com/robfig/cron/v3"
 )
 
 // Job
@@ -24,14 +27,10 @@ type Job struct {
 }
 
 func (j *Job) CreateJob() (int64, error) {
-	result, err := DB.Exec(
+	result, err := DB.NamedExec(
 		`INSERT INTO Jobs (JobName, Schedule, Host, Commands, Env) 
-		VALUES (?, ?, ?, ?, ?)`,
-		j.JobName,
-		j.Schedule,
-		j.Host,
-		j.Commands,
-		j.Env,
+		VALUES (:JobName, :Schedule, :Host, :Commands, :Env)`,
+		j,
 	)
 	if err != nil {
 		return 0, err
@@ -45,24 +44,26 @@ func (j *Job) CreateJob() (int64, error) {
 	return id, nil
 }
 
-func (j *Job) UpdateJob() (int64, error) {
-	result, err := DB.NamedExec(
+func (j *Job) UpdateJob() error {
+	if _, err := DB.NamedExec(
 		`UPDATE Jobs SET
 				JobName  = :JobName,
 				Schedule = :Schedule,
 				Host     = :Host,
-				JobType  = :JobType,
 				Commands = :Commands,
 				Env      = :Env,
+				JobType  = :JobType,
 				JobStatus = :JobStatus,
-				Updated  = datetime('now')
-				WHERE ID = :ID`,
+				Updated  = datetime('now'),
+				LastRun = :LastRun,
+				NextRun = :NextRun
+				WHERE JobId = :JobId`,
 		j,
-	)
-	if err != nil {
-		return 0, err
+	); err != nil {
+		return err
 	}
-	return result.RowsAffected()
+	fmt.Println("job #%d successfully update", j.JobId)
+	return nil
 }
 
 func DeleteJob(id int) (int64, error) {
@@ -107,6 +108,18 @@ func GetAllJobs() ([]Job, error) {
 		return []Job{}, err
 	}
 	return jobs, nil
+}
+
+func (j *Job) CalcNextRun() error {
+	next, err := robfig.ParseStandard(j.Schedule)
+	if err != nil {
+		return err
+	}
+	j.NextRun = next.Next(time.Now()).Format(SqlTimeFormat)
+	if err := j.UpdateJob(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // EnvMap

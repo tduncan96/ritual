@@ -8,7 +8,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const sqliteTimeFormat = "2006-01-02 15:04:05"
+const SqlTimeFormat = "2006-01-02 15:04:05"
+
 var DB *sqlx.DB
 
 //go:embed schema.sql

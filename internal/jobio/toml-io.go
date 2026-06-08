@@ -44,20 +44,10 @@ func TomlToJob(file string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	var def db.Job
-	if err := sushi.Unmarshal(tomlData, &def); err != nil {
+	var job db.Job
+	if err := sushi.Unmarshal(tomlData, &job); err != nil {
 		return 0, err
 	}
-
-	job := db.Job{
-		JobName:  def.JobName,
-		Schedule: def.Schedule,
-		Host:     def.Host,
-		JobType:  def.JobType,
-		Commands: def.Commands,
-	}
-
 	id, err := job.CreateJob()
 	if err != nil {
 		return 0, err
@@ -73,20 +63,11 @@ func jobsToToml(ids []int) error {
 	}
 
 	for _, job := range jobs {
-		def := db.Job{
-			JobName:  job.JobName,
-			Schedule: job.Schedule,
-			Host:     job.Host,
-			JobType:  job.JobType,
-			Commands: job.Commands,
-		}
-
-		tomlData, err := sushi.Marshal(def)
+		tomlData, err := sushi.Marshal(job)
 		if err != nil {
 			return err
 		}
-
-		if err := os.WriteFile(filepath.Join(TomlPath, def.JobName+".toml"), tomlData, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(TomlPath, job.JobName+".toml"), tomlData, 0644); err != nil {
 			return err
 		}
 	}

@@ -2,6 +2,7 @@ package exec
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"time"
@@ -38,17 +39,25 @@ func ExecuteJob(job db.Job) error {
 	}
 
 	end := time.Now()
+	job.LastRun = time.Now().Format(db.SqlTimeFormat)
+	if err := job.UpdateJob(); err != nil {
+		errs = append(errs, err)
+	}
 
 	run.StartTime = db.TimeStamp(start)
 	run.EndTime = db.TimeStamp(end)
 	run.Duration = int64(end.Sub(start))
 	run.Logs = string(out)
 
-	_, err = run.CreateRun()
+	id, err := run.CreateRun()
 	if err != nil {
 		errs = append(errs, err)
 	}
 
+	fmt.Println("run entry #%d added for job #%d", id, job.JobId)
+	if err := job.CalcNextRun(); err != nil {
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 

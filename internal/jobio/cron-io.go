@@ -48,7 +48,7 @@ func CrontabToJobs(host string) (ids []int64, err error) {
 		}
 		fields := strings.Fields(line)
 		var sched, cmd string
-		switch {		
+		switch {
 		// ex. @every 5m /usr/.local/bin/script.sh
 		case strings.HasPrefix(fields[0], "@every"):
 			sched, cmd = strings.Join(fields[:2], " "), strings.Join(fields[2:], " ")

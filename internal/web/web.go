@@ -136,12 +136,13 @@ func Start() {
 	loadTemplates()
 	http.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
-	http.HandleFunc("GET /{$}", homeHandler)               // Home Landing Page
-	http.HandleFunc("GET /jobs", jobsHandler)              // Jobs Page
+	http.HandleFunc("GET /{$}", homeHandler) // Home Landing Page
 
-	http.HandleFunc("GET /jobs/new", jobFormHandler)       // New Job Creation Form
-	http.HandleFunc("POST /jobs/new", createJobHandler)    // Submit New Job Form
-	
+	http.HandleFunc("GET /jobs", jobsHandler) // Jobs Page
+
+	http.HandleFunc("GET /jobs/new", jobFormHandler)    // New Job Creation Form
+	http.HandleFunc("POST /jobs/new", createJobHandler) // Submit New Job Form
+
 	http.HandleFunc("GET /jobs/{id}", jobHandler)          // Individual Job page
 	http.HandleFunc("DELETE /jobs/{id}", deleteJobHandler) // Delete Job
 

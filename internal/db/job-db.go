@@ -79,7 +79,7 @@ func (j *Job) CalcNextRun() error {
 }
 
 func DeleteJob(id int) (int64, error) {
-	result, err := DB.Exec("DELETE FROM jobs WHERE JobId = ?", id)
+	result, err := DB.Exec("DELETE FROM Jobs WHERE JobId = ?", id)
 	if err != nil {
 		return 0, err
 	}

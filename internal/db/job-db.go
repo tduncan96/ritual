@@ -110,12 +110,7 @@ func GetJobs(ids []int) ([]Job, error) {
 
 func GetAllJobs() ([]Job, error) {
 	var jobs []Job
-	var ids []int
-	err := DB.Select(&ids, "SELECT JobId FROM Jobs")
-	if err != nil {
-		return []Job{}, err
-	}
-	jobs, err = GetJobs(ids)
+	err := DB.Select(&jobs, "SELECT * FROM Jobs")
 	if err != nil {
 		return []Job{}, err
 	}

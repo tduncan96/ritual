@@ -2,7 +2,7 @@
   <img src="internal/web/static/images/logo_no_bg.png" alt="Ritual" width="150">
 </p>
 
-<p align="center"><b>Ritual</b><br>A self-hosted job scheduler that gives cron a memory and a face.</p>
+<p align="center"><b>Ritual</b><br>A self-hosted job scheduler for multiple hosts.</p>
 
 ## Overview
 
@@ -10,17 +10,17 @@ Ritual is a small Go service for defining, scheduling, running, and reviewing
 recurring jobs. Plain crontab schedules a command and forgets it. Ritual keeps
 the schedule, runs the command, records every run (exit code, output, timing),
 and tracks when each job last ran and runs next. You drive it from a CLI or a
-built-in web UI, and you can pull in jobs you already have by importing existing
-crontabs or TOML files.
+built-in web UI (WIP), and you can pull in jobs you already have by importing existing
+crontabs.
 
 ## Features
 
-- Create and schedule jobs from the CLI or the web UI.
+- Create and schedule jobs from the CLI.
 - Standard cron expressions plus shortcuts like `@every` and `@hourly`.
-- Real execution through a shell, with exit code and combined output captured.
-- Run history stored per job, with last-run and next-run timestamps.
+- Run history stored per job with exit code and stdout/stderr captured logs.
 - Import jobs from a local crontab or from TOML definitions.
-- Run any job on demand without waiting for its schedule.
+- Export to TOML files for backups.
+- On demand Run execution.
 
 ## Build
 

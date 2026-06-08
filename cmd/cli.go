@@ -22,11 +22,25 @@ var importTomlCmd = &cobra.Command{
 	Short: ".toml file job import",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := jobio.TomlToJob(args[0])
+		if err := jobio.TomlToJob(args[0]); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var exportTomlCmd = &cobra.Command{
+	Use: "export <job id>",
+	Short: "Export job to .toml file",
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id, err := strconv.Atoi(args[0])
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Imported Job ID: %d\n", id)
+		if err := jobio.JobToToml(id); err != nil {
+			return err
+		}
 		return nil
 	},
 }

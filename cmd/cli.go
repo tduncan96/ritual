@@ -7,7 +7,6 @@ import (
 
 	"ritual/internal/db"
 	"ritual/internal/exec"
-	"ritual/internal/jobio"
 
 	"github.com/spf13/cobra"
 )

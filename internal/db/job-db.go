@@ -7,23 +7,24 @@ import (
 	"strings"
 	"time"
 
+	"ritual/codec"
+
 	robfig "github.com/robfig/cron/v3"
 )
 
 // Job
 type Job struct {
-	JobId     int    `db:"JobId"`
-	JobName   string `db:"JobName" toml:"name"`
-	Schedule  string `db:"Schedule" toml:"schedule"`
-	Host      string `db:"Host" toml:"host"`
-	Commands  string `db:"Commands" toml:"commands"`
-	Env       EnvMap `db:"Env"`
-	JobType   string `db:"JobType" toml:"type"`
-	JobStatus string `db:"JobStatus"`
-	Created   string `db:"Created"`
-	Updated   string `db:"Updated"`
-	LastRun   string `db:"LastRun"`
-	NextRun   string `db:"NextRun"`
+	JobId    int        `db:"JobId"`
+	JobName  string     `db:"JobName"`
+	Schedule string     `db:"Schedule"`
+	Host     string     `db:"Host"`
+	Commands string     `db:"Commands"`
+	Env      envMap     `db:"Env"`
+	Status   statusBool `db:"Status"`
+	Created  string     `db:"Created"`
+	Updated  string     `db:"Updated"`
+	LastRun  string     `db:"LastRun"`
+	NextRun  string     `db:"NextRun"`
 }
 
 func (j *Job) CreateJob() (int64, error) {
@@ -52,8 +53,7 @@ func (j *Job) UpdateJob() error {
 				Host     = :Host,
 				Commands = :Commands,
 				Env      = :Env,
-				JobType  = :JobType,
-				JobStatus = :JobStatus,
+				Status = :Status,
 				Updated  = datetime('now'),
 				LastRun = :LastRun,
 				NextRun = :NextRun
@@ -62,7 +62,7 @@ func (j *Job) UpdateJob() error {
 	); err != nil {
 		return err
 	}
-	fmt.Println("job #%d successfully update", j.JobId)
+	fmt.Printf("job #%d successfully updated\n", j.JobId)
 	return nil
 }
 
@@ -117,13 +117,13 @@ func GetAllJobs() ([]Job, error) {
 	return jobs, nil
 }
 
-// EnvMap
-type EnvMap map[string]string
+// envMap
+type envMap map[string]string
 
-var _ driver.Valuer = EnvMap{}
-var _ sql.Scanner = (*EnvMap)(nil)
+var _ driver.Valuer = envMap{}
+var _ sql.Scanner = (*envMap)(nil)
 
-func EnvMapToString(envMap map[string]string) (envString string) {
+func envMapToString(envMap map[string]string) (envString string) {
 	if len(envMap) > 0 {
 		var envStrings []string
 		for key, value := range envMap {
@@ -136,11 +136,11 @@ func EnvMapToString(envMap map[string]string) (envString string) {
 	}
 	return envString
 }
-func (em EnvMap) Value() (driver.Value, error) {
-	return EnvMapToString(em), nil
+func (em envMap) Value() (driver.Value, error) {
+	return envMapToString(em), nil
 }
 
-func EnvStringToMap(envString string) (envMap map[string]string) {
+func envStringToMap(envString string) (envMap map[string]string) {
 	envMap = make(map[string]string)
 	for _, line := range strings.Split(envString, "\n") {
 		if line == "" {
@@ -154,7 +154,51 @@ func EnvStringToMap(envString string) (envMap map[string]string) {
 	}
 	return envMap
 }
-func (em *EnvMap) Scan(src any) error {
-	*em = EnvStringToMap(src.(string))
+func (em *envMap) Scan(src any) error {
+	*em = envStringToMap(src.(string))
 	return nil
+}
+
+// statusBool
+type statusBool bool
+
+func (sb statusBool) Value() (driver.Value, error) {
+	if sb {
+		return 1, nil
+	} else {
+		return 0, nil
+	}
+}
+
+func (sb *statusBool) Scan(src any) error {
+	if src == 1 {
+		*sb = true
+	} else {
+		*sb = false
+	}
+	return nil
+}
+
+func DefToJob(def codec.Definition) Job {
+	job := Job{
+		JobName:  def.Name,
+		Schedule: def.Schedule,
+		Host:     def.Host,
+		Commands: def.Commands,
+		Env:      def.Env,
+		Status:   statusBool(def.Status),
+	}
+	return job
+}
+
+func JobToDef(job Job) codec.Definition {
+	def := codec.Definition{
+		Name:     job.JobName,
+		Schedule: job.Schedule,
+		Host:     job.Host,
+		Commands: job.Commands,
+		Env:      job.Env,
+		Status:   bool(job.Status),
+	}
+	return def
 }

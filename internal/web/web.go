@@ -68,8 +68,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		JobName:   r.FormValue("job_name"),
 		Schedule:  r.FormValue("schedule"),
 		Host:      r.FormValue("host"),
-		JobStatus: "Active",
-		JobType:   r.FormValue("job_type"),
+		Status: true,
 		Commands:  r.FormValue("command"),
 	}
 

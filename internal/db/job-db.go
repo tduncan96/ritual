@@ -178,8 +178,6 @@ func EnvMapToString(envMap map[string]string) (envString string) {
 			envStrings = append(envStrings, envLine)
 		}
 		envString = strings.Join(envStrings, "\n")
-	} else {
-		envString = ""
 	}
 	return envString
 }

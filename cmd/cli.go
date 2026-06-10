@@ -31,9 +31,9 @@ var importCmd = &cobra.Command{
 		} else if len(args) == 1 {
 			info, err := os.Stat(args[0])
 			switch {
-			case err != nil && info.Mode().IsRegular():
+			case err == nil && info.Mode().IsRegular():
 				files = append(files, args[0])
-			case err != nil && info.IsDir():
+			case err == nil && info.IsDir():
 				allFiles, err := os.ReadDir(args[0])
 				if err != nil {
 					return err
@@ -65,7 +65,7 @@ var importCmd = &cobra.Command{
 		for _, file := range files {
 			if file == "crontab" {
 				fileType = "cron"
-				cmd := exec.Command("sh", "-c", "crontab", "-l")
+				cmd := exec.Command("crontab", "-l")
 				out, err := cmd.Output()
 				if err != nil {
 					return err
@@ -114,7 +114,7 @@ var exportCmd = &cobra.Command{
 			jobList = jobs
 		} else {
 			var ids []int64
-			for _, arg := range args[0:] {
+			for _, arg := range args[1:] {
 				id, err := strconv.Atoi(arg)
 				if err != nil {
 					return err
@@ -207,6 +207,7 @@ func init() {
 	importCmd.Flags().BoolVarP(&crontab, "crontab", "c", false, "import from crontab")
 	importCmd.Flags().StringVarP(&host, "host", "h", "localhost", "import from given host")
 
+	exportCmd.Flags().BoolVarP(&batch, "batch", "b", false, "batch export jobs to file")
 	exportCmd.Flags().StringVarP(&host, "host", "h", "localhost", "export to given host")
 
 	rootCmd.AddCommand(importCmd)

@@ -14,7 +14,7 @@ type Definition struct {
 	Host     string            `toml:"host"`
 	Commands string            `toml:"commands"`
 	Env      map[string]string `toml:"env"`
-	Hash     string            `toml:"hash"`
+	Hash     string            `toml:"-"`
 	Status   bool              `toml:"status"`
 }
 

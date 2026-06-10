@@ -1,11 +1,15 @@
 package db
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
+	"errors"
 
 	"ritual/codec"
 
@@ -20,6 +24,7 @@ type Job struct {
 	Host     string `db:"Host"`
 	Commands string `db:"Commands"`
 	Env      envMap `db:"Env"`
+	Hash     string `db:"Hash"`
 	Status   bool   `db:"Status"`
 	Created  string `db:"Created"`
 	Updated  string `db:"Updated"`
@@ -27,25 +32,66 @@ type Job struct {
 	NextRun  string `db:"NextRun"`
 }
 
+func getHash(host, schedule, commands string, env map[string]string) string {
+	h := sha256.New()
+
+	h.Write([]byte(host))
+	h.Write([]byte{0})
+	h.Write([]byte(schedule))
+	h.Write([]byte{0})
+	h.Write([]byte(commands))
+	h.Write([]byte{0})
+
+	envStrings := strings.Split(EnvMapToString(env), "\n")
+	for _, line := range envStrings {
+		h.Write([]byte(line))
+		h.Write([]byte{0})
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 func (j *Job) CreateJob() (int64, error) {
+	j.Hash = getHash(j.Host, j.Schedule, j.Commands, j.Env)
+
 	result, err := DB.NamedExec(
-		`INSERT INTO Jobs (JobName, Schedule, Host, Commands, Env) 
-		VALUES (:JobName, :Schedule, :Host, :Commands, :Env)`,
+		`INSERT INTO Jobs (JobName, Schedule, Host, Commands, Env, Hash) 
+		VALUES (:JobName, :Schedule, :Host, :Commands, :Env, :Hash)
+		ON CONFLICT (Hash) DO NOTHING`,
 		j,
 	)
 	if err != nil {
 		return 0, err
 	}
 
+	num, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	if num == 0 {
+		var collision Job
+		var errs []error
+		getErr := DB.Get(&collision, `SELECT JobId, JobName FROM Jobs WHERE Hash = ?`, j.Hash)
+		if getErr != nil {
+			errs = append(errs, getErr)
+		}
+		qErr := fmt.Errorf("collision with Job #%v - %v", collision.JobId, collision.JobName)
+		errs = append(errs, qErr)
+		return 0, errors.Join(errs...)
+	}
+
 	id, err := result.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
+
 	j.JobId = id
 	return id, nil
 }
 
 func (j *Job) UpdateJob() error {
+	j.Hash = getHash(j.Host, j.Schedule, j.Commands, j.Env)
+	
 	if _, err := DB.NamedExec(
 		`UPDATE Jobs SET
 				JobName  = :JobName,
@@ -53,6 +99,7 @@ func (j *Job) UpdateJob() error {
 				Host     = :Host,
 				Commands = :Commands,
 				Env      = :Env,
+				Hash     = :Hash,
 				Status   = :Status,
 				Updated  = datetime('now'),
 				LastRun  = :LastRun,
@@ -78,7 +125,7 @@ func (j *Job) CalcNextRun() error {
 	return nil
 }
 
-func DeleteJob(id int) (int64, error) {
+func DeleteJob(id int64) (int64, error) {
 	result, err := DB.Exec("DELETE FROM Jobs WHERE JobId = ?", id)
 	if err != nil {
 		return 0, err
@@ -86,7 +133,7 @@ func DeleteJob(id int) (int64, error) {
 	return result.RowsAffected()
 }
 
-func GetJob(id int) (Job, error) {
+func GetJob(id int64) (Job, error) {
 	var job Job
 	err := DB.Get(&job, "SELECT * FROM Jobs WHERE JobId = ?", id)
 	if err != nil {
@@ -95,7 +142,7 @@ func GetJob(id int) (Job, error) {
 	return job, nil
 }
 
-func GetJobs(ids []int) ([]Job, error) {
+func GetJobs(ids []int64) ([]Job, error) {
 	var jobs []Job
 	for _, id := range ids {
 		job, err := GetJob(id)
@@ -123,11 +170,11 @@ type envMap map[string]string
 var _ driver.Valuer = envMap{}
 var _ sql.Scanner = (*envMap)(nil)
 
-func envMapToString(envMap map[string]string) (envString string) {
+func EnvMapToString(envMap map[string]string) (envString string) {
 	if len(envMap) > 0 {
 		var envStrings []string
-		for key, value := range envMap {
-			envLine := key + "=" + value
+		for _, key := range slices.Sorted(maps.Keys(envMap)) {
+			envLine := strings.Join([]string{key, envMap[key]}, "=")
 			envStrings = append(envStrings, envLine)
 		}
 		envString = strings.Join(envStrings, "\n")
@@ -137,7 +184,7 @@ func envMapToString(envMap map[string]string) (envString string) {
 	return envString
 }
 func (em envMap) Value() (driver.Value, error) {
-	return envMapToString(em), nil
+	return EnvMapToString(em), nil
 }
 
 func EnvStringToMap(envString string) (envMap map[string]string) {

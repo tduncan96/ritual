@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"hash/fnv"
 	"maps"
 	"os/exec"
 	"regexp"
@@ -16,14 +15,6 @@ import (
 type CronCodec struct{}
 
 var envRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*\s*=`)
-
-func jobName(host, schedule, command string) string {
-	h := fnv.New32a()
-	h.Write([]byte(schedule))
-	h.Write([]byte("\x00"))
-	h.Write([]byte(command))
-	return fmt.Sprintf("%s_%08x", host, h.Sum32())
-}
 
 func (c CronCodec) Marshal(def Definition) (blob []byte, err error) {
 	var buf bytes.Buffer
@@ -111,8 +102,9 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 
 		lineEnv := make(map[string]string, len(env))
 		maps.Copy(lineEnv, env)
+		hash := getHash(host, sched, cmd, lineEnv)
 		if name == "" {
-			name = strings.Join([]string{host, "crontab", jobName(host, sched, cmd)}, "_")
+			name = strings.Join([]string{host, "crontab", hash}, "_")
 		}
 		def := Definition{
 			Name:     name,
@@ -120,10 +112,11 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 			Schedule: sched,
 			Commands: cmd,
 			Env:      lineEnv,
+			Hash:     hash,
 			Status:   status,
 		}
 		defs = append(defs, def)
-		
+
 		name = ""
 		status = true
 	}

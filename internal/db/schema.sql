@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS Jobs (
     Host TEXT NOT NULL,
     Commands TEXT NOT NULL,
     Env TEXT NOT NULL DEFAULT "",
+    Hash TEXT NOT NULL UNIQUE,
     Status INTEGER NOT NULL DEFAULT 1,
     Created TEXT NOT NULL DEFAULT (datetime('now')),
     Updated TEXT NOT NULL DEFAULT (datetime('now')),

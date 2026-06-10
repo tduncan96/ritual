@@ -4,12 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"maps"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
-	"hash/fnv"
 
 	robfig "github.com/robfig/cron/v3"
 )
@@ -19,11 +18,11 @@ type CronCodec struct{}
 var envRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*\s*=`)
 
 func jobName(host, schedule, command string) string {
-    h := fnv.New32a()
-    h.Write([]byte(schedule))
-    h.Write([]byte("\x00"))
-    h.Write([]byte(command))
-    return fmt.Sprintf("%s_%08x", host, h.Sum32())
+	h := fnv.New32a()
+	h.Write([]byte(schedule))
+	h.Write([]byte("\x00"))
+	h.Write([]byte(command))
+	return fmt.Sprintf("%s_%08x", host, h.Sum32())
 }
 
 func (c CronCodec) Marshal(def Definition) (blob []byte, err error) {
@@ -59,32 +58,41 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 		return []Definition{}, err
 	}
 
-	env := make(map[string]string)
 	var name string
 	var status bool
+	env := make(map[string]string)
+
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
+
 		fields := strings.Fields(line)
 		var sched, cmd string
 		switch {
-		// ex. @every 5m /usr/.local/bin/script.sh
+
+		// ex. @every 5m /usr/.local/bin/script.sh -l
 		case strings.HasPrefix(fields[0], "@every"):
 			sched, cmd = strings.Join(fields[:2], " "), strings.Join(fields[2:], " ")
-		// ex. @monthly /usr/.local/bin/script.sh
+
+		// ex. @monthly /usr/.local/bin/script.sh -l
 		case strings.HasPrefix(fields[0], "@"):
 			sched, cmd = fields[0], strings.Join(fields[1:], " ")
-		// ex. 0 * * * * /usr/.local/bin/script.sh
-		case strings.HasPrefix(fields[0], "## "):
-			if fields[1] == "name:" {
-				name = strings.Join(fields[2:], "")
-			}
+
+		// ex. ## name: Example Job Name
+		case fields[1] == "name:":
+			name = strings.Join(fields[2:], "")
+			continue
+
+		// ex. 0 2 * * * /usr/.local/bin/script.sh -l
 		default:
-			if len(fields) < 6 {
-				// Move on to next check
-			} else {
+			if len(fields) > 6 && fields[0] == "##" {
+				sched, cmd = strings.Join(fields[0:6], " "), strings.Join(fields[6:], " ")
+				status = false
+			} else if len(fields) > 5 {
 				sched, cmd = strings.Join(fields[:5], " "), strings.Join(fields[5:], " ")
+			} else {
+				continue
 			}
 		}
 
@@ -112,10 +120,12 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 			Schedule: sched,
 			Commands: cmd,
 			Env:      lineEnv,
-			Status:   true,
+			Status:   status,
 		}
 		defs = append(defs, def)
+		
 		name = ""
+		status = true
 	}
 	return defs, nil
 }

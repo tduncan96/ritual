@@ -9,8 +9,8 @@ import (
 
 // Run
 type Run struct {
-	RunId     int       `db:"RunId"`
-	JobId     *int      `db:"JobId"`
+	RunId     int64       `db:"RunId"`
+	JobId     *int64      `db:"JobId"`
 	JobName   string    `db:"JobName"`
 	Host      string    `db:"Host"`
 	StartTime TimeStamp `db:"StartTime"`

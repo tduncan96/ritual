@@ -1,62 +1,76 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
+	"ritual/codec"
 	"ritual/internal/db"
 	"ritual/internal/exec"
 
 	"github.com/spf13/cobra"
 )
 
+var dumpPath = os.Getenv("RITUAL_CRON_PATH")
+var host string
+var crontab bool
+
 var importCmd = &cobra.Command{
 	Use:   "import",
-	Short: "Import jobs from external source",
-}
-
-var importTomlCmd = &cobra.Command{
-	Use:   "toml <file>",
-	Short: ".toml file job import",
-	Args:  cobra.ExactArgs(1),
+	Short: "Import file contents as new job(s)",
+	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := jobio.TomlToJob(args[0]); err != nil {
-			return err
+		var files []string
+		var errs []error
+
+		if len(args) == 1 {
+			files = []string{args[0]}
+		} else {
+			allFiles, err := os.ReadDir(dumpPath)
+			if err != nil {
+				return err
+			}
+			for _, path := range allFiles {
+				if path.IsDir() {
+					continue
+				}
+				files = append(files, path.Name())
+			}
 		}
-		return nil
+
+		for _, file := range files {
+			fileType := strings.Replace(filepath.Ext(file), ".", "", 1)
+
+			content, err := os.ReadFile(file)
+			if err != nil {
+				return err
+			}
+			defs, err := codec.Codecs["toml"].Unmarshal(content)
+			if err != nil {
+				return err
+			}
+			var errs []error
+			for _, def := range defs {
+				job := db.DefToJob(def)
+				id, err := job.CreateJob()
+				if err != nil {
+					errs = append(errs, fmt.Errorf("error creating job: %w", err))
+				}
+				fmt.Printf("Job #%d successfully created", id)
+			}
+		}
+
+		return errors.Join(errs...)
 	},
 }
 
-var exportTomlCmd = &cobra.Command{
-	Use: "export <job id>",
-	Short: "Export job to .toml file",
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := strconv.Atoi(args[0])
-		if err != nil {
-			return err
-		}
-		if err := jobio.JobToToml(id); err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-var importCronCmd = &cobra.Command{
-	Use:   "cron <host>",
-	Short: "crontab job jobio",
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		host := args[0]
-		ids, err := jobio.CrontabToJobs(host)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("job ids created: %v", ids)
-		return nil
-	},
+var exportCmd = &cobra.Command{
+	Use:   "export",
+	Short: "Export jobs from internal source",
 }
 
 var runJob = &cobra.Command{
@@ -110,10 +124,11 @@ var createJob = &cobra.Command{
 }
 
 func init() {
-	importCmd.AddCommand(importTomlCmd)
-	importCmd.AddCommand(importCronCmd)
-	rootCmd.AddCommand(importCmd)
+	importCmd.Flags().StringVarP(&host, "host", "h", "localhost", "import from given host")
+	exportCmd.Flags().StringVarP(&host, "host", "h", "localhost", "export to given host")
 
+	rootCmd.AddCommand(importCmd)
+	rootCmd.AddCommand(exportCmd)
 	rootCmd.AddCommand(runJob)
 	rootCmd.AddCommand(createJob)
 }

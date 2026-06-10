@@ -16,19 +16,19 @@ type CronCodec struct{}
 
 var envRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*\s*=`)
 
-func (c CronCodec) Marshal(def Definition) (blob []byte, err error) {
+func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 	var buf bytes.Buffer
-
-	fmt.Fprintf(&buf, "## name: %v\n", def.Name)
-	for key, value := range def.Env {
-		fmt.Fprintf(&buf, "%s=%s\n", key, value)
+	for _, def := range defs {
+		fmt.Fprintf(&buf, "## name: %v\n", def.Name)
+		for key, value := range def.Env {
+			fmt.Fprintf(&buf, "%s=%s\n", key, value)
+		}
+		stat := ""
+		if def.Status == false {
+			stat = "## "
+		}
+		fmt.Fprintf(&buf, "%s%s %s\n\n", stat, def.Schedule, def.Commands)
 	}
-	stat := ""
-	if def.Status == false {
-		stat = "## "
-	}
-	fmt.Fprintf(&buf, "%s%s %s\n", stat, def.Schedule, def.Commands)
-
 	return buf.Bytes(), nil
 }
 
@@ -102,7 +102,7 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 
 		lineEnv := make(map[string]string, len(env))
 		maps.Copy(lineEnv, env)
-		hash := getHash(host, sched, cmd, lineEnv)
+		hash := GetHash(host, sched, cmd, lineEnv)
 		if name == "" {
 			name = strings.Join([]string{host, "crontab", hash}, "_")
 		}

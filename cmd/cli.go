@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"slices"
 
 	"ritual/codec"
 	"ritual/internal/db"
@@ -105,6 +107,12 @@ var exportCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fileType := args[0]
+		possTypes := slices.Collect(maps.Keys(codec.Codecs))
+		if !slices.Contains(possTypes, fileType) {
+			err := fmt.Errorf("invalid file type: %v", fileType)
+			return err
+		}
+		
 		var jobList []db.Job
 		if len(args) == 1 {
 			jobs, err := db.GetAllJobs()
@@ -128,25 +136,35 @@ var exportCmd = &cobra.Command{
 			jobList = jobs
 		}
 
-		var content []byte
+		var defs []codec.Definition
 		for _, job := range jobList {
-			def := db.JobToDef(job)
-			blob, err := codec.Codecs[fileType].Marshal(def)
+			defs = append(defs, db.JobToDef(job))
+		}
+
+		var content []byte
+		if batch {
+			blob, err := codec.Codecs[fileType].Marshal(defs)
 			if err != nil {
 				fmt.Printf("error marshaling job: %v", err)
-				continue
 			}
 			content = append(content, blob...)
-			if !batch {
-				if err := os.WriteFile(job.JobName+"."+fileType, content, 0o644); err != nil {
-					fmt.Printf("error writing Job #%v to file: %v", job.JobId, err)
-				}
-				content = []byte{}
-			}
-		}
-		if len(content) > 0 {
 			if err := os.WriteFile("batch."+fileType, content, 0o644); err != nil {
-				return err
+				fmt.Printf("error writing to file: %v", err)
+			}
+		} else {
+			for _, def := range defs {
+				d := []codec.Definition{def}
+				blob, err := codec.Codecs[fileType].Marshal(d)
+				if err != nil {
+					fmt.Printf("error marshaling job: %v", err)
+				}
+				content = append(content, blob...)
+				if !batch {
+					if err := os.WriteFile(def.Name+"."+fileType, content, 0o644); err != nil {
+						fmt.Printf("error writing to file: %v", err)
+					}
+					content = []byte{}
+				}
 			}
 		}
 		return nil

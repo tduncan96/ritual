@@ -19,7 +19,7 @@ type Definition struct {
 }
 
 type Codec interface {
-	Marshal(Definition) ([]byte, error)     // to file
+	Marshal([]Definition) ([]byte, error)     // to file
 	Unmarshal([]byte) ([]Definition, error) // to struct
 }
 
@@ -28,7 +28,7 @@ var Codecs = map[string]Codec{
 	"toml": TOMLCodec{},
 }
 
-func getHash(host, schedule, commands string, lineEnv map[string]string) string {
+func GetHash(host, schedule, commands string, lineEnv map[string]string) string {
 	h := sha256.New()
 
 	h.Write([]byte(host))

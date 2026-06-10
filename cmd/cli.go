@@ -42,7 +42,7 @@ var importCmd = &cobra.Command{
 					if path.IsDir() {
 						continue
 					}
-					files = append(files, filepath.Join(dumpPath, path.Name()))
+					files = append(files, filepath.Join(args[0], path.Name()))
 				}
 			default:
 				return err

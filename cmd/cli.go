@@ -82,6 +82,12 @@ var importCmd = &cobra.Command{
 				content = out
 			}
 
+			possTypes := slices.Collect(maps.Keys(codec.Codecs))
+			if !slices.Contains(possTypes, fileType) {
+				err := fmt.Errorf("invalid file type: %v", fileType)
+				return err
+			}
+
 			defs, err := codec.Codecs[fileType].Unmarshal(content)
 			if err != nil {
 				return err
@@ -96,7 +102,6 @@ var importCmd = &cobra.Command{
 				fmt.Printf("Job #%d successfully created", id)
 			}
 		}
-
 		return nil
 	},
 }
@@ -141,30 +146,26 @@ var exportCmd = &cobra.Command{
 			defs = append(defs, db.JobToDef(job))
 		}
 
-		var content []byte
-		if batch {
-			blob, err := codec.Codecs[fileType].Marshal(defs)
-			if err != nil {
-				fmt.Printf("error marshaling job: %v", err)
-			}
-			content = append(content, blob...)
-			if err := os.WriteFile("batch."+fileType, content, 0o644); err != nil {
-				fmt.Printf("error writing to file: %v", err)
-			}
-		} else {
+		if !batch {
 			for _, def := range defs {
 				d := []codec.Definition{def}
 				blob, err := codec.Codecs[fileType].Marshal(d)
 				if err != nil {
-					fmt.Printf("error marshaling job: %v", err)
+					fmt.Printf("error marshaling job %v: %v", def.Name, err)
+					continue
 				}
-				content = append(content, blob...)
-				if !batch {
-					if err := os.WriteFile(def.Name+"."+fileType, content, 0o644); err != nil {
-						fmt.Printf("error writing to file: %v", err)
-					}
-					content = []byte{}
+				if err := os.WriteFile(def.Name+"."+fileType, blob, 0o644); err != nil {
+					fmt.Printf("error writing to file for job %v: %v", def.Name, err)
+					continue
 				}
+			}
+		} else {
+			blob, err := codec.Codecs[fileType].Marshal(defs)
+			if err != nil {
+				return fmt.Errorf("error marshaling job: %v", err)
+			}
+			if err := os.WriteFile("batch."+fileType, blob, 0o644); err != nil {
+				return fmt.Errorf("error writing to file: %v", err)
 			}
 		}
 		return nil

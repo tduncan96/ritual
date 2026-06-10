@@ -39,11 +39,14 @@ func getHash(host, schedule, commands string, lineEnv map[string]string) string 
 	h.Write([]byte{0})
 
 	var envStrings []string
-	for _, key := range slices.Sorted(maps.Keys(lineEnv)) {
-		envLine := strings.Join([]string{key, lineEnv[key]}, "=")
-		envStrings = append(envStrings, envLine)
+	if len(lineEnv) > 0 {
+		for _, key := range slices.Sorted(maps.Keys(lineEnv)) {
+			envLine := strings.Join([]string{key, lineEnv[key]}, "=")
+			envStrings = append(envStrings, envLine)
+		}
+	} else {
+		envStrings = append(envStrings, "")
 	}
-
 	for _, line := range envStrings {
 		h.Write([]byte(line))
 		h.Write([]byte{0})

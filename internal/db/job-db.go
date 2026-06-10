@@ -4,12 +4,12 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
 	"time"
-	"errors"
 
 	"ritual/codec"
 
@@ -91,8 +91,8 @@ func (j *Job) CreateJob() (int64, error) {
 
 func (j *Job) UpdateJob() error {
 	j.Hash = getHash(j.Host, j.Schedule, j.Commands, j.Env)
-	
-	if _, err := DB.NamedExec(
+	var errs []error
+	result, err := DB.NamedExec(
 		`UPDATE Jobs SET
 				JobName  = :JobName,
 				Schedule = :Schedule,
@@ -104,10 +104,27 @@ func (j *Job) UpdateJob() error {
 				Updated  = datetime('now'),
 				LastRun  = :LastRun,
 				NextRun  = :NextRun
-				WHERE JobId = :JobId`,
+				WHERE JobId = :JobId
+				ON CONFLICT (Hash) DO NOTHING`,
 		j,
-	); err != nil {
-		return err
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	num, err := result.RowsAffected()
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if num == 0 {
+		var collision Job
+		var errs []error
+		getErr := DB.Get(&collision, `SELECT JobId, JobName FROM Jobs WHERE Hash = ?`, j.Hash)
+		if getErr != nil {
+			errs = append(errs, getErr)
+		}
+		qErr := fmt.Errorf("collision with Job #%v - %v", collision.JobId, collision.JobName)
+		errs = append(errs, qErr)
+		return errors.Join(errs...)
 	}
 	fmt.Printf("job #%d successfully updated\n", j.JobId)
 	return nil

@@ -137,7 +137,7 @@ var exportCmd = &cobra.Command{
 				continue
 			}
 			content = append(content, blob...)
-			if ! batch {
+			if !batch {
 				if err := os.WriteFile(job.JobName+"."+fileType, content, 0o644); err != nil {
 					fmt.Printf("error writing Job #%v to file: %v", job.JobId, err)
 				}

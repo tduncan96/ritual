@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"slices"
 
 	robfig "github.com/robfig/cron/v3"
 )
@@ -20,8 +21,13 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 	var buf bytes.Buffer
 	for _, def := range defs {
 		fmt.Fprintf(&buf, "## name: %v\n", def.Name)
-		for key, value := range def.Env {
-			fmt.Fprintf(&buf, "%s=%s\n", key, value)
+		if len(def.Env) > 0 {
+			var envStrings []string
+			for _, key := range slices.Sorted(maps.Keys(def.Env)) {
+				envLine := strings.Join([]string{key, def.Env[key]}, "=")
+				envStrings = append(envStrings, envLine)
+			}
+			fmt.Fprintf(&buf, "%s", strings.Join(envStrings, "\n"))
 		}
 		stat := ""
 		if !def.Status {
@@ -50,7 +56,7 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 	}
 
 	var name string
-	var status bool
+	var status = true
 	env := make(map[string]string)
 
 	for _, line := range lines {
@@ -71,8 +77,8 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 			sched, cmd = fields[0], strings.Join(fields[1:], " ")
 
 		// ex. ## name: Example Job Name
-		case fields[1] == "name:":
-			name = strings.Join(fields[2:], "")
+		case len(fields) > 1 && fields[1] == "name:":
+			name = strings.Join(fields[2:], " ")
 			continue
 
 		// ex. 0 2 * * * /usr/.local/bin/script.sh -l

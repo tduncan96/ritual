@@ -29,7 +29,7 @@ func (run *Run) CreateRun() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return result.RowsAffected()
+	return result.LastInsertId()
 }
 
 // TimeStamp

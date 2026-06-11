@@ -54,7 +54,7 @@ func ExecuteJob(job db.Job) error {
 		errs = append(errs, err)
 	}
 
-	fmt.Println("run entry #%d added for job #%d", id, job.JobId)
+	fmt.Printf("run entry #%d added for job #%d", id, job.JobId)
 	if err := job.CalcNextRun(); err != nil {
 		errs = append(errs, err)
 	}

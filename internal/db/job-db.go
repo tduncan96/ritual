@@ -180,7 +180,11 @@ func EnvStringToMap(envString string) (envMap map[string]string) {
 	return envMap
 }
 func (em *envMap) Scan(src any) error {
-	*em = EnvStringToMap(src.(string))
+	s, ok := src.(string)
+	if !ok {
+		return fmt.Errorf("TimeStamp.Scan: expected string, got %T", src)
+	}
+	*em = EnvStringToMap(s)
 	return nil
 }
 

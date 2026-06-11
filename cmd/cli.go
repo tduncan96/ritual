@@ -194,7 +194,7 @@ var runJob = &cobra.Command{
 		if err := execute.Runner.ExecuteJob(runner, job); err != nil {
 			return err
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Job ID %d\n successfully started", id)
+		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started", id)
 		return nil
 	},
 }
@@ -230,10 +230,8 @@ var createJob = &cobra.Command{
 
 func init() {
 	importCmd.Flags().BoolVarP(&crontab, "crontab", "c", false, "import from crontab")
-	importCmd.Flags().StringVarP(&host, "host", "h", "localhost", "import from given host")
 
 	exportCmd.Flags().BoolVarP(&batch, "batch", "b", false, "batch export jobs to file")
-	exportCmd.Flags().StringVarP(&host, "host", "h", "localhost", "export to given host")
 
 	rootCmd.AddCommand(importCmd)
 	rootCmd.AddCommand(exportCmd)

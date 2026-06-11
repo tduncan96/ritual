@@ -24,7 +24,7 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 			fmt.Fprintf(&buf, "%s=%s\n", key, value)
 		}
 		stat := ""
-		if def.Status == false {
+		if !def.Status {
 			stat = "## "
 		}
 		fmt.Fprintf(&buf, "%s%s %s\n\n", stat, def.Schedule, def.Commands)
@@ -88,7 +88,7 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 		}
 
 		if _, err := robfig.ParseStandard(sched); err != nil {
-			if envRe.MatchString(line) == true {
+			if envRe.MatchString(line) {
 				envExp := strings.SplitN(line, "=", 2)
 				key := envExp[0]
 				value := envExp[1]

@@ -34,6 +34,9 @@ func Init() (*sqlx.DB, error) {
 	return DB, nil
 }
 
-func Close(db *sqlx.DB) {
-	db.Close()
+func Close(db *sqlx.DB) error {
+	if err := db.Close(); err != nil {
+		return err
+	}
+	return nil
 }

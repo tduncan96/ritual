@@ -154,7 +154,7 @@ var exportCmd = &cobra.Command{
 					fmt.Printf("error marshaling job %v: %v", def.Name, err)
 					continue
 				}
-				if err := os.WriteFile(def.Name+"."+fileType, blob, 0o644); err != nil {
+				if err := os.WriteFile(def.Name+"."+fileType, blob, 0o600); err != nil {
 					fmt.Printf("error writing to file for job %v: %v", def.Name, err)
 					continue
 				}
@@ -164,7 +164,7 @@ var exportCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("error marshaling job: %v", err)
 			}
-			if err := os.WriteFile("batch."+fileType, blob, 0o644); err != nil {
+			if err := os.WriteFile("batch."+fileType, blob, 0o600); err != nil {
 				return fmt.Errorf("error writing to file: %v", err)
 			}
 		}

@@ -20,7 +20,7 @@ type Definition struct {
 
 type Codec interface {
 	Marshal([]Definition) ([]byte, error)   // to file
-	Unmarshal([]byte) ([]Definition, error) // to struct
+	Unmarshal([]byte) ([]Definition, error) // to []struct
 }
 
 var Codecs = map[string]Codec{

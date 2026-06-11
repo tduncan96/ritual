@@ -8,8 +8,8 @@
 
 A small Go service for scheduling recurring jobs. It keeps the schedule, runs the
 command, and records every run (exit code, output, timing, last/next run). Driven
-from a CLI, with a web UI in progress. Jobs can be imported from a local crontab
-or TOML.
+from a CLI, with a web UI in progress. Jobs can be imported from a local crontab, 
+YAML, JSON, or TOML.
 
 ## Build
 

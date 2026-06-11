@@ -29,7 +29,7 @@ var startCmd = &cobra.Command{
 					} else {
 						runner = execute.RemoteRunner{}
 					}
-					if err := execute.Runner.ExecuteJob(runner, job); err != nil {
+					if err := runner.ExecuteJob(job); err != nil {
 						fmt.Printf("error executing job #%v - %v: %v", job.JobId, job.JobName, err)
 					}
 				})

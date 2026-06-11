@@ -67,45 +67,41 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 		fields := strings.Fields(line)
 		var sched, cmd string
 		switch {
-
-		// ex. @every 5m /usr/.local/bin/script.sh -l
-		case strings.HasPrefix(fields[0], "@every"):
-			sched, cmd = strings.Join(fields[:2], " "), strings.Join(fields[2:], " ")
-
-		// ex. @monthly /usr/.local/bin/script.sh -l
-		case strings.HasPrefix(fields[0], "@"):
-			sched, cmd = fields[0], strings.Join(fields[1:], " ")
-
-		// ex. ## name: Example Job Name
-		case len(fields) > 1 && fields[1] == "name:":
-			name = strings.Join(fields[2:], " ")
+		case envRe.MatchString(line):
+			envExp := strings.SplitN(line, "=", 2)
+			key := envExp[0]
+			value := envExp[1]
+			env[key] = value
 			continue
 
-		// ex. 0 2 * * * /usr/.local/bin/script.sh -l
-		default:
-			if len(fields) > 6 && fields[0] == "##" {
-				sched, cmd = strings.Join(fields[0:6], " "), strings.Join(fields[6:], " ")
-				status = false
-			} else if len(fields) > 5 {
-				sched, cmd = strings.Join(fields[:5], " "), strings.Join(fields[5:], " ")
-			} else {
+			// ex. @every 5m /usr/.local/bin/script.sh -l
+			case strings.HasPrefix(fields[0], "@every"):
+				sched, cmd = strings.Join(fields[:2], " "), strings.Join(fields[2:], " ")
+
+			// ex. @monthly /usr/.local/bin/script.sh -l
+			case strings.HasPrefix(fields[0], "@"):
+				sched, cmd = fields[0], strings.Join(fields[1:], " ")
+
+			// ex. ## name: Example Job Name
+			case len(fields) > 1 && fields[1] == "name:":
+				name = strings.Join(fields[2:], " ")
 				continue
-			}
+
+			// ex. 0 2 * * * /usr/.local/bin/script.sh -l
+			default:
+				if len(fields) > 6 && fields[0] == "##" {
+					sched, cmd = strings.Join(fields[1:6], " "), strings.Join(fields[6:], " ")
+					status = false
+				} else if len(fields) > 5 {
+					sched, cmd = strings.Join(fields[:5], " "), strings.Join(fields[5:], " ")
+				} 
 		}
 
 		if _, err := robfig.ParseStandard(sched); err != nil {
-			if envRe.MatchString(line) {
-				envExp := strings.SplitN(line, "=", 2)
-				key := envExp[0]
-				value := envExp[1]
-				env[key] = value
-				continue
-			} else {
-				fmt.Printf("error parsing line: %v", line)
-				continue
-			}
+			fmt.Printf("error parsing line: %v", line)
+			continue
 		}
-
+	
 		lineEnv := make(map[string]string, len(env))
 		maps.Copy(lineEnv, env)
 		hash := GetHash(host, sched, cmd, lineEnv)

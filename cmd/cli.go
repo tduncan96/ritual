@@ -18,7 +18,6 @@ import (
 )
 
 var dumpPath = os.Getenv("RITUAL_CRON_PATH")
-var host string
 var crontab bool
 var batch bool
 
@@ -191,7 +190,7 @@ var runJob = &cobra.Command{
 		} else {
 			runner = execute.RemoteRunner{}
 		}
-		if err := execute.Runner.ExecuteJob(runner, job); err != nil {
+		if err := runner.ExecuteJob(job); err != nil {
 			return err
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started", id)

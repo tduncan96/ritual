@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
@@ -38,20 +39,24 @@ func loadTemplates() {
 	}
 }
 
-func render(w http.ResponseWriter, templateName string, data any) {
+func render(w http.ResponseWriter, templateName string, data any) error {
 	t, ok := templates[templateName]
 	if !ok {
 		http.Error(w, "template not found: "+templateName, http.StatusInternalServerError)
-		return
+		return fmt.Errorf("template not found: %w", templateName)
 	}
 
 	var buf bytes.Buffer
 	if err := t.ExecuteTemplate(&buf, "base.gohtml", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	buf.WriteTo(w)
+	if _, err := buf.WriteTo(w); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -65,11 +70,11 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	j := db.Job{
-		JobName:   r.FormValue("job_name"),
-		Schedule:  r.FormValue("schedule"),
-		Host:      r.FormValue("host"),
-		Status: true,
-		Commands:  r.FormValue("command"),
+		JobName:  r.FormValue("job_name"),
+		Schedule: r.FormValue("schedule"),
+		Host:     r.FormValue("host"),
+		Status:   true,
+		Commands: r.FormValue("command"),
 	}
 
 	_, err := j.CreateJob()

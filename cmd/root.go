@@ -7,8 +7,11 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "ritual",
 	Short: "Automation scheduler",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := cmd.Help(); err != nil {
+			return err
+		}
+		return nil
 	},
 }
 

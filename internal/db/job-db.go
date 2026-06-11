@@ -182,7 +182,7 @@ func EnvStringToMap(envString string) (envMap map[string]string) {
 func (em *envMap) Scan(src any) error {
 	s, ok := src.(string)
 	if !ok {
-		return fmt.Errorf("TimeStamp.Scan: expected string, got %T", src)
+		return fmt.Errorf("EnvMap.Scan: expected string, got %T", src)
 	}
 	*em = EnvStringToMap(s)
 	return nil

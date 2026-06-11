@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
-	"slices"
 
 	"ritual/codec"
 	"ritual/internal/db"
@@ -117,7 +117,7 @@ var exportCmd = &cobra.Command{
 			err := fmt.Errorf("invalid file type: %v", fileType)
 			return err
 		}
-		
+
 		var jobList []db.Job
 		if len(args) == 1 {
 			jobs, err := db.GetAllJobs()
@@ -185,7 +185,13 @@ var runJob = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err := execute.ExecuteJob(job); err != nil {
+		var runner execute.Runner
+		if job.Host == "localhost" {
+			runner = execute.LocalRunner{}
+		} else {
+			runner = execute.RemoteRunner{}
+		}
+		if err := execute.Runner.ExecuteJob(runner, job); err != nil {
 			return err
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Job ID %d\n successfully started", id)

@@ -10,7 +10,9 @@ import (
 	"ritual/internal/db"
 )
 
-func ExecuteJob(job db.Job) error {
+type LocalRunner struct {}
+
+func (l LocalRunner) ExecuteJob(job db.Job) error {
 	var errs []error
 	start := time.Now()
 	run := db.Run{
@@ -60,5 +62,3 @@ func ExecuteJob(job db.Job) error {
 	}
 	return errors.Join(errs...)
 }
-
-// This will need to be changed to accomodate ssh later on

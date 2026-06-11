@@ -23,7 +23,13 @@ var startCmd = &cobra.Command{
 		for _, job := range allJobs {
 			if job.Status {
 				entryId, err := cron.AddFunc(job.Schedule, func() {
-					if err := execute.ExecuteJob(job); err != nil {
+					var runner execute.Runner
+					if job.Host == "localhost" {
+						runner = execute.LocalRunner{}
+					} else {
+						runner = execute.RemoteRunner{}
+					}
+					if err := execute.Runner.ExecuteJob(runner, job); err != nil {
 						fmt.Printf("error executing job #%v - %v: %v", job.JobId, job.JobName, err)
 					}
 				})

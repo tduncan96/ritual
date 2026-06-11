@@ -19,10 +19,9 @@ func (t TOMLCodec) Marshal(defs []Definition) ([]byte, error) {
 }
 
 func (t TOMLCodec) Unmarshal(blob []byte) ([]Definition, error) {
-	var defs []Definition
 	var f tomlFile
 	if err := sushi.Unmarshal(blob, &f); err != nil {
-		return defs, err
+		return []Definition{}, err
 	}
 	return f.Rituals, nil
 }

@@ -9,23 +9,25 @@ import (
 )
 
 type Definition struct {
-	Name     string            `toml:"name"`
-	Schedule string            `toml:"schedule"`
-	Host     string            `toml:"host"`
-	Commands string            `toml:"commands"`
-	Env      map[string]string `toml:"env"`
-	Hash     string            `toml:"-"`
-	Status   bool              `toml:"status"`
+	Name     string            `toml:"name" yaml:"name" json:"name"`
+	Schedule string            `toml:"schedule" yaml:"schedule" json:"schedule"`
+	Host     string            `toml:"host" yaml:"host" json:"host"`
+	Commands string            `toml:"commands" yaml:"commands" json:"commands"`
+	Env      map[string]string `toml:"env" yaml:"env" json:"env"`
+	Hash     string            `toml:"-" yaml:"-" json:"-"`
+	Status   bool              `toml:"status" yaml:"status" json:"status"`
 }
 
 type Codec interface {
-	Marshal([]Definition) ([]byte, error)     // to file
+	Marshal([]Definition) ([]byte, error)   // to file
 	Unmarshal([]byte) ([]Definition, error) // to struct
 }
 
 var Codecs = map[string]Codec{
 	"cron": CronCodec{},
 	"toml": TOMLCodec{},
+	"yaml": YAMLCodec{},
+	"json": JSONCodec{},
 }
 
 func GetHash(host, schedule, commands string, lineEnv map[string]string) string {

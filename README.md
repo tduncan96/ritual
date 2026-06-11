@@ -37,8 +37,8 @@ ritual import ./jobs/
 ritual import --crontab
 
 # export jobs to files (no ids = all jobs)
-ritual export toml
-ritual export toml 1 2
+ritual export yaml
+ritual export json 1 2
 ```
 
 ## Configuration

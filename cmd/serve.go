@@ -21,15 +21,17 @@ var startCmd = &cobra.Command{
 			return err
 		}
 		for _, job := range allJobs {
-			entryId, err := cron.AddFunc(job.Schedule, func() {
-				if err := execute.ExecuteJob(job); err != nil {
-					fmt.Printf("error executing job #%v - %v: %v", job.JobId, job.JobName, err)
+			if job.Status {
+				entryId, err := cron.AddFunc(job.Schedule, func() {
+					if err := execute.ExecuteJob(job); err != nil {
+						fmt.Printf("error executing job #%v - %v: %v", job.JobId, job.JobName, err)
+					}
+				})
+				if err != nil {
+					fmt.Printf("could not add job %v to cron: %v", job.JobId, err)
+				} else {
+					fmt.Printf("job %v added to cron as entry %v", job.JobId, entryId)
 				}
-			})
-			if err != nil {
-				fmt.Printf("could not add job %v to cron: %v", job.JobId, err)
-			} else {
-				fmt.Printf("job %v added to cron as entry %v", job.JobId, entryId)
 			}
 		}
 

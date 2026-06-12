@@ -52,9 +52,6 @@ func (l LocalRunner) ExecuteJob(job db.Job) error {
 	}
 
 	job.LastRun = end.Format(db.SqlTimeFormat)
-	if err := job.UpdateJob(); err != nil {
-		errs = append(errs, err)
-	}
 
 	fmt.Printf("run entry #%d added for job #%d", id, job.JobId)
 	if err := job.CalcNextRun(); err != nil {

@@ -35,8 +35,8 @@ func (j *Job) CreateJob() (int64, error) {
 	j.Hash = codec.GetHash(j.Host, j.Schedule, j.Commands, j.Env)
 
 	result, err := DB.NamedExec(
-		`INSERT INTO Jobs (JobName, Schedule, Host, Commands, Env, Hash) 
-		VALUES (:JobName, :Schedule, :Host, :Commands, :Env, :Hash)
+		`INSERT INTO Jobs (JobName, Schedule, Host, Commands, Env, Hash, Status) 
+		VALUES (:JobName, :Schedule, :Host, :Commands, :Env, :Hash, :Status)
 		ON CONFLICT (Hash) DO NOTHING`,
 		j,
 	)

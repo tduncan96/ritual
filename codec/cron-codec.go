@@ -25,7 +25,7 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 			var envStrings []string
 			for _, key := range slices.Sorted(maps.Keys(def.Env)) {
 				envLine := strings.Join([]string{key, def.Env[key]}, "=")
-				envStrings = append(envStrings, envLine)
+				envStrings = append(envStrings, envLine, "\n")
 			}
 			fmt.Fprintf(&buf, "%s", strings.Join(envStrings, "\n"))
 		}

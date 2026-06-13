@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"ritual/internal/api"
 	"ritual/internal/db"
 	"ritual/internal/execute"
 	"ritual/internal/web"
@@ -15,11 +16,16 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Ritual cron runner and web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cron := robfig.New()
+		bus := api.NewBus()
+		api.Bus = bus
+
 		allJobs, err := db.GetAllJobs()
 		if err != nil {
 			return err
 		}
+
+		cron := robfig.New()
+		var Lookup = make(map[int64]robfig.EntryID)
 		for _, job := range allJobs {
 			if job.Status {
 				entryId, err := cron.AddFunc(job.Schedule, func() {
@@ -38,8 +44,11 @@ var startCmd = &cobra.Command{
 				} else {
 					fmt.Printf("job %v added to cron as entry %v", job.JobId, entryId)
 				}
+				Lookup[job.JobId] = entryId
 			}
 		}
+
+		go api.Subscription(api.Logging, api.Shutdown, api.DBWrites, api.Cron)
 
 		cron.Start()
 		web.Start()

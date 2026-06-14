@@ -16,12 +16,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var startCmd = &cobra.Command{
-	Use:   "start",
+var serveCmd = &cobra.Command{
+	Use:   "serve",
 	Short: "Start Ritual cron runner and web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		newBus := bus.NewBus()
-		bus.GlobalBus = newBus
+		bus.MakeBus()
+		server.MakeMux()
 
 		allJobs, err := db.GetAllJobs()
 		if err != nil {

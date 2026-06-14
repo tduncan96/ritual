@@ -27,8 +27,8 @@ type EventBus struct {
 
 var GlobalBus *EventBus
 
-func NewBus() *EventBus {
-	return &EventBus{subscribers: make(map[SubList][]chan Event)}
+func MakeBus() {
+	GlobalBus = &EventBus{subscribers: make(map[SubList][]chan Event)}
 }
 
 func (bus *EventBus) Subscribe(subLists ...SubList) <-chan Event {

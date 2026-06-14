@@ -1,12 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"ritual/internal/api"
+	"ritual/internal/bus"
 	"ritual/internal/db"
 	"ritual/internal/execute"
-	"ritual/internal/web"
+	"ritual/internal/server"
 
 	robfig "github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
@@ -16,8 +20,8 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Ritual cron runner and web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		bus := api.NewBus()
-		api.Bus = bus
+		newBus := bus.NewBus()
+		bus.GlobalBus = newBus
 
 		allJobs, err := db.GetAllJobs()
 		if err != nil {
@@ -48,10 +52,15 @@ var startCmd = &cobra.Command{
 			}
 		}
 
-		go api.Subscription(api.Logging, api.Shutdown, api.DBWrites, api.Cron)
+		go bus.Subscription(bus.Logging, bus.Shutdown, bus.DBWrites)
 
 		cron.Start()
-		web.Start()
+		go server.SocketServe()
+		go server.WebServe()
+
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		<-ctx.Done()
 		return nil
 	},
 }

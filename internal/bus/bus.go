@@ -1,4 +1,4 @@
-package api
+package bus
 
 import (
 	"encoding/json"
@@ -12,12 +12,12 @@ const (
 	Shutdown SubList = iota // 0
 	Logging                 // 1
 	DBWrites                // 2
-	Cron                    // 3
 )
 
 type Event struct {
 	SubList SubList
-	Payload map[string]any
+	Action  string
+	Payload []byte
 }
 
 type EventBus struct {
@@ -25,7 +25,7 @@ type EventBus struct {
 	subscribers map[SubList][]chan Event
 }
 
-var Bus *EventBus
+var GlobalBus *EventBus
 
 func NewBus() *EventBus {
 	return &EventBus{subscribers: make(map[SubList][]chan Event)}
@@ -58,8 +58,8 @@ func (bus *EventBus) Unsubscribe(ch <-chan Event, subLists ...SubList) {
 }
 
 func Subscription(subLists ...SubList) {
-	ch := Bus.Subscribe(subLists...)
-	defer Bus.Unsubscribe(ch, subLists...)
+	ch := GlobalBus.Subscribe(subLists...)
+	defer GlobalBus.Unsubscribe(ch, subLists...)
 	for event := range ch {
 		switch event.SubList {
 		case Shutdown:
@@ -71,15 +71,16 @@ func Subscription(subLists ...SubList) {
 				fmt.Println(string(entry))
 			}
 		case DBWrites:
-		case Cron:
 		}
 	}
 }
 
-func (bus *EventBus) Publish(event Event) {
+func (bus *EventBus) Publish(events ...Event) {
 	bus.mu.Lock()
 	defer bus.mu.Unlock()
-	for _, ch := range bus.subscribers[event.SubList] {
-		ch <- event
+	for _, event := range events {
+		for _, ch := range bus.subscribers[event.SubList] {
+			ch <- event
+		}
 	}
 }

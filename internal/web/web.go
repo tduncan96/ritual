@@ -11,12 +11,11 @@ import (
 	"ritual/internal/db"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var templates map[string]*template.Template
 
-func loadTemplates() {
+func LoadTemplates() {
 	templates = make(map[string]*template.Template)
 
 	entries, err := fs.ReadDir(templateFS, "templates")
@@ -108,7 +107,7 @@ func jobsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	render(w, "jobs", map[string]any{"Jobs": jobs})
+	render(w, "jobs", map[string][]db.Job{"Jobs": jobs})
 }
 
 func jobFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,27 +134,12 @@ var staticFS embed.FS
 //go:embed templates/*.gohtml
 var templateFS embed.FS
 
-func Start() {
-
-	loadTemplates()
-	http.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
-
-	http.HandleFunc("GET /{$}", homeHandler) // Home Landing Page
-
-	http.HandleFunc("GET /jobs", jobsHandler) // Jobs Page
-
-	http.HandleFunc("GET /jobs/new", jobFormHandler)    // New Job Creation Form
-	http.HandleFunc("POST /jobs/new", createJobHandler) // Submit New Job Form
-
-	http.HandleFunc("GET /jobs/{id}", jobHandler)          // Individual Job page
-	http.HandleFunc("DELETE /jobs/{id}", deleteJobHandler) // Delete Job
-
-	srv := &http.Server{
-		Addr:         ":1771",
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
-	log.Fatal(srv.ListenAndServe())
+func Register(mux *http.ServeMux) {
+	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
+	mux.HandleFunc("GET /{$}", homeHandler)               // Home Landing Page
+	mux.HandleFunc("GET /jobs", jobsHandler)              // Jobs Page
+	mux.HandleFunc("GET /jobs/new", jobFormHandler)       // New Job Creation Form
+	mux.HandleFunc("POST /jobs/new", createJobHandler)    // Submit New Job Form
+	mux.HandleFunc("GET /jobs/{id}", jobHandler)          // Individual Job page
+	mux.HandleFunc("DELETE /jobs/{id}", deleteJobHandler) // Delete Job
 }

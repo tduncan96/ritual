@@ -12,7 +12,7 @@ import (
 
 	"ritual/codec"
 	"ritual/internal/db"
-	"ritual/internal/execute"
+	"ritual/internal/run"
 
 	"github.com/spf13/cobra"
 )
@@ -184,11 +184,11 @@ var runJob = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var runner execute.Runner
+		var runner run.Runner
 		if job.Host == "localhost" {
-			runner = execute.LocalRunner{}
+			runner = run.LocalRunner{}
 		} else {
-			runner = execute.RemoteRunner{}
+			runner = run.RemoteRunner{}
 		}
 		if err := runner.ExecuteJob(job); err != nil {
 			return err

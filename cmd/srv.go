@@ -9,7 +9,7 @@ import (
 
 	"ritual/internal/bus"
 	"ritual/internal/db"
-	"ritual/internal/execute"
+	"ritual/internal/run"
 	"ritual/internal/server"
 
 	robfig "github.com/robfig/cron/v3"
@@ -33,11 +33,11 @@ var serveCmd = &cobra.Command{
 		for _, job := range allJobs {
 			if job.Status {
 				entryId, err := cron.AddFunc(job.Schedule, func() {
-					var runner execute.Runner
+					var runner run.Runner
 					if job.Host == "localhost" {
-						runner = execute.LocalRunner{}
+						runner = run.LocalRunner{}
 					} else {
-						runner = execute.RemoteRunner{}
+						runner = run.RemoteRunner{}
 					}
 					if err := runner.ExecuteJob(job); err != nil {
 						fmt.Printf("error executing job #%v - %v: %v", job.JobId, job.JobName, err)

@@ -10,7 +10,7 @@ import (
 	"ritual/internal/bus"
 	"ritual/internal/db"
 	"ritual/internal/run"
-	"ritual/internal/server"
+	"ritual/internal/srv"
 
 	robfig "github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
@@ -21,7 +21,7 @@ var serveCmd = &cobra.Command{
 	Short: "Start Ritual cron runner and web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bus.MakeBus()
-		server.MakeMux()
+		srv.MakeMux()
 
 		allJobs, err := db.GetAllJobs()
 		if err != nil {
@@ -55,8 +55,8 @@ var serveCmd = &cobra.Command{
 		go bus.Subscription(bus.Logging, bus.Shutdown, bus.DBWrites)
 
 		cron.Start()
-		go server.SocketServe()
-		go server.WebServe()
+		go srv.SocketServe()
+		go srv.WebServe()
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()

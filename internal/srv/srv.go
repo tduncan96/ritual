@@ -1,4 +1,4 @@
-package server
+package srv
 
 import (
 	"log"
@@ -13,6 +13,8 @@ import (
 
 var Mux *http.ServeMux
 
+const SocketPath string = "/tmp/ritual.sock"
+
 func MakeMux() {
 	Mux = http.NewServeMux()
 	web.Register(Mux)
@@ -21,24 +23,27 @@ func MakeMux() {
 
 func WebServe() {
 	web.LoadTemplates() // This whole template thing needs to be reevaluated during the web rewrite.
-	srv := &http.Server{
+	webSrv := &http.Server{
 		Addr:         ":1771",
 		Handler:      Mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	log.Fatal(srv.ListenAndServe())
+	log.Fatal(webSrv.ListenAndServe())
 }
 
 func SocketServe() {
-	const sockPath = "/tmp/ritual.sock"
 
-	os.Remove(sockPath)
+	os.Remove(SocketPath)
 
-	ln, err := net.Listen("unix", sockPath)
+	sockSrv, err := net.Listen("unix", SocketPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Fatal(http.Serve(ln, Mux))
+	log.Fatal(http.Serve(sockSrv, Mux))
+}
+
+func newSocketClient(socketPath string) *http.Client {
+	return &http.Client{}
 }

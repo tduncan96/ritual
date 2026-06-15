@@ -1,8 +1,6 @@
 package bus
 
 import (
-	"encoding/json"
-	"fmt"
 	"sync"
 )
 
@@ -14,10 +12,19 @@ const (
 	DBWrites                // 2
 )
 
+type Method int
+
+const (
+	GET    Method = iota // 0
+	POST                 // 1
+	PUT                  // 2
+	DELETE               // 3
+)
+
 type Event struct {
-	SubList SubList
-	Action  string
-	Payload []byte
+	SubList SubList `json:"sub_list"`
+	Method  Method  `json:"method"`
+	Payload []byte  `json:"payload"`
 }
 
 type EventBus struct {
@@ -64,12 +71,6 @@ func Subscription(subLists ...SubList) {
 		switch event.SubList {
 		case Shutdown:
 		case Logging:
-			entry, err := json.Marshal(event.Payload)
-			if err != nil {
-				fmt.Printf("error marshaling log event payload: %v", err)
-			} else {
-				fmt.Println(string(entry))
-			}
 		case DBWrites:
 		}
 	}

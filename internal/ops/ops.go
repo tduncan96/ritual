@@ -1,71 +1,79 @@
 package ops
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"ritual/codec"
+	"log/slog"
+
 	"ritual/internal/bus"
 	"ritual/internal/db"
 )
 
 type RequestBody struct {
-	JobIds []int64            `json:"job_ids,omitempty"`
-	Defs   []codec.Definition `json:"definitions,omitempty"`
-	Events []bus.Event        `json:"events,omitempty"`
-	Host   string             `json:"host,omitempty"`
+	Jobs   []db.Job    `json:"jobs,omitempty"`
+	Events []bus.Event `json:"events,omitempty"`
+	Host   string      `json:"host,omitempty"`
+}
+
+type Result struct {
+	JobId   int64  `json:"job_id,omitempty"`
+	JobName string `json:"job_name"`
+	Code    int    `json:"code"`
+	Error   string `json:"error,omitempty"`
 }
 
 type ResponseBody struct {
-	JobIds []int64 `json:"job_ids"`
-	Error  error   `json:"error"`
+	Results []Result `json:"results"`
 }
 
-func CreateJobCall(request RequestBody) (response ResponseBody, err error) {
-	if request.Defs == nil {
-		return response, errors.New("no job definitions passed in request")
-	} else {
-		var errs []error
-		for _, def := range request.Defs {
-			job := db.DefToJob(def)
-			id, err := job.CreateJob()
-			if err != nil {
-				cErr := fmt.Errorf("error creating job '%v': %w", def.Name, err)
-				errs = append(errs, cErr)
-			}
-			response.JobIds = append(response.JobIds, id)
+func (request *RequestBody) CreateJobCall() (response ResponseBody, err error) {
+	if len(request.Jobs) == 0 {
+		err = errors.New("no job definitions passed in request")
+		slog.Error("no job definitions passed in request")
+		return response, err
+	}
+
+	for _, job := range request.Jobs {
+		var result Result
+		result.JobName = job.JobName
+		id, err := job.CreateJob()
+		if err != nil {
+			result.Code = 1
+			result.Error = fmt.Sprintf("error creating job '%v': %v", result.JobName, err)
+			slog.Warn("error creating job", "job_name", result.JobName, "error", err)
+		} else {
+			result.JobId = id
+			result.Code = 0
+			slog.Info("job successfully created", "job_id", result.JobId, "job_name", result.JobName)
 		}
-		response.Error = errors.Join(errs...)
+		response.Results = append(response.Results, result)
 	}
 
-	var logEntry []byte
-	if response.JobIds != nil {
-		log := fmt.Sprintf("job id(s) successfully created: %v.", response.JobIds)
-		logEntry = append(logEntry, log...)
-	} else {
-		log := fmt.Sprint("no new jobs created")
-		logEntry = append(logEntry, log...)
-	}
-	if response.Error != nil {
-		log := []byte(fmt.Sprintf("\nerrors encountered: %v", response.Error))
-		logEntry = append(logEntry, log...)
+	var newJobIds []int64
+	for _, result := range response.Results {
+		if result.Code == 0 {
+			newJobIds = append(newJobIds, result.JobId)
+		}
 	}
 
-	logging := bus.Event{
-		SubList: bus.Logging,
-		Method:  bus.PUT,
-		Payload: logEntry,
+	if len(newJobIds) > 0 {
+		payload, err := json.Marshal(newJobIds)
+		if err != nil {
+			return response, err
+		}
+		dbWrite := bus.Event{
+			SubList: bus.DBWrites,
+			Method:  bus.POST,
+			Payload: payload,
+		}
+		bus.GlobalBus.Publish(dbWrite)
 	}
-	dbWrite := bus.Event{
-		SubList: bus.DBWrites,
-		Method:  bus.POST,
-		Payload: []byte{},
-	}
-	bus.GlobalBus.Publish(dbWrite, logging)
-
+	
 	return response, nil
 }
 
-func PublishEvents(request RequestBody) (response ResponseBody, err error) {
+func (request *RequestBody) PublishEvents() (response ResponseBody, err error) {
 	if request.Events == nil {
 		return response, errors.New("no events passed in request")
 	} else {

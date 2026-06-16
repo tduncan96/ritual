@@ -12,7 +12,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	response, err := ops.CreateJobCall(request)
+	response, err := request.CreateJobCall()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -22,13 +22,13 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&response)
 }
 
-func publishEvent(w http.ResponseWriter, r *http.Request) {
+func publishEventHandler(w http.ResponseWriter, r *http.Request) {
 	var request ops.RequestBody
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	response, err := ops.PublishEvents(request)
+	response, err := request.PublishEvents()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -40,5 +40,5 @@ func publishEvent(w http.ResponseWriter, r *http.Request) {
 
 func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/jobs/new", createJobHandler)
-	mux.HandleFunc("POST /api/publish", publishEvent)
+	mux.HandleFunc("POST /api/publish", publishEventHandler)
 }

@@ -27,7 +27,6 @@ var Codecs = map[string]Codec{
 	"cron": CronCodec{},
 	"toml": TOMLCodec{},
 	"yaml": YAMLCodec{},
-	"json": JSONCodec{},
 }
 
 func GetHash(host, schedule, commands string, lineEnv map[string]string) string {

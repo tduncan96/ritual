@@ -8,8 +8,7 @@ type SubList int
 
 const (
 	Shutdown SubList = iota // 0
-	Logging                 // 1
-	DBWrites                // 2
+	Database                // 1
 )
 
 type Method int
@@ -70,8 +69,11 @@ func Subscription(subLists ...SubList) {
 	for event := range ch {
 		switch event.SubList {
 		case Shutdown:
-		case Logging:
-		case DBWrites:
+		case Database:
+			switch event.Method {
+			case POST:
+				
+			}
 		}
 	}
 }

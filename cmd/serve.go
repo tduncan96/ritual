@@ -52,7 +52,7 @@ var serveCmd = &cobra.Command{
 			}
 		}
 
-		go bus.Subscription(bus.Logging, bus.Shutdown, bus.DBWrites)
+		go bus.Subscription(bus.Shutdown, bus.Database)
 
 		cron.Start()
 		go srv.SocketServe()

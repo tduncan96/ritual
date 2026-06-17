@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http"
@@ -34,7 +35,6 @@ func WebServe() {
 }
 
 func SocketServe() {
-
 	os.Remove(SocketPath)
 
 	sockSrv, err := net.Listen("unix", SocketPath)
@@ -44,6 +44,12 @@ func SocketServe() {
 	log.Fatal(http.Serve(sockSrv, Mux))
 }
 
-func newSocketClient(socketPath string) *http.Client {
-	return &http.Client{}
+func NewSocketClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return net.Dial("unix", SocketPath)
+			},
+		},
+	}
 }

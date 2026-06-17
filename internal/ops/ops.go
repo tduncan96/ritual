@@ -63,13 +63,13 @@ func (request *RequestBody) CreateJobCall() (response ResponseBody, err error) {
 			return response, err
 		}
 		dbWrite := bus.Event{
-			SubList: bus.DBWrites,
+			SubList: bus.Database,
 			Method:  bus.POST,
 			Payload: payload,
 		}
 		bus.GlobalBus.Publish(dbWrite)
 	}
-	
+
 	return response, nil
 }
 

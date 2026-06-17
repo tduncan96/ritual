@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"maps"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,8 +16,11 @@ import (
 	"strings"
 
 	"ritual/codec"
+	"ritual/internal/bus"
 	"ritual/internal/db"
+	"ritual/internal/ops"
 	"ritual/internal/run"
+	"ritual/internal/srv"
 
 	"github.com/spf13/cobra"
 )
@@ -63,6 +71,7 @@ var importCmd = &cobra.Command{
 
 		var fileType string
 		var content []byte
+		var jobList []db.Job
 		for _, file := range files {
 			if file == "crontab" {
 				fileType = "cron"
@@ -98,9 +107,15 @@ var importCmd = &cobra.Command{
 					fmt.Printf("error creating job: %v", err)
 					continue
 				}
-				fmt.Printf("Job #%d successfully created", id)
+				jobList = append(jobList, job)
+				fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully created", id)
 			}
 		}
+
+		if err := publishToDaemon(jobList, bus.POST); err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
@@ -167,6 +182,13 @@ var exportCmd = &cobra.Command{
 				return fmt.Errorf("error writing to file: %v", err)
 			}
 		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Jobs successfully exported!")
+
+		if err := publishToDaemon(jobList, bus.GET); err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
@@ -194,6 +216,11 @@ var runJob = &cobra.Command{
 			return err
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started", id)
+
+		if err := publishToDaemon([]db.Job{job}, bus.POST); err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
@@ -216,13 +243,17 @@ var createJob = &cobra.Command{
 			}
 			newJob.Env = db.EnvStringToMap(string(file))
 		}
-
 		id, err := newJob.CreateJob()
 		if err != nil {
 			return fmt.Errorf("error creating job: %w", err)
 		}
+		fmt.Fprintf(cmd.OutOrStdout(),"job successfully created: ID: %d", id)
+		
+		newJob.JobId = id
+		if err := publishToDaemon([]db.Job{newJob}, bus.POST); err != nil {
+			return err
+		}
 
-		fmt.Printf("job successfully created: ID: %v", id)
 		return nil
 	},
 }
@@ -236,4 +267,37 @@ func init() {
 	rootCmd.AddCommand(exportCmd)
 	rootCmd.AddCommand(runJob)
 	rootCmd.AddCommand(createJob)
+}
+
+func publishToDaemon(jobs []db.Job, method bus.Method) error {
+	var ids []int64
+	for _, job := range jobs {
+		ids = append(ids, job.JobId)
+	}
+	payload, err := json.Marshal(ids)
+	if err != nil {
+		return err
+	}
+	requestBody, err := json.Marshal(ops.RequestBody{
+		Events: []bus.Event{{
+			SubList: bus.Database,
+			Method:  method,
+			Payload: payload,
+		}}})
+	if err != nil {
+		return err
+	}
+	client := srv.NewSocketClient()
+	response, err := client.Post("http://unix/api/publish", "application/json", bytes.NewReader(requestBody))
+	if err != nil {
+		slog.Warn("could not notify daemon", "error", err)
+		return nil
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(response.Body)
+		return fmt.Errorf("bad server response %s: %s", response.Status, body)
+	}
+
+	return nil
 }

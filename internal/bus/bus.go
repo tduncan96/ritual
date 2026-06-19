@@ -87,17 +87,13 @@ func CronSubscription(cr *cron.CronRunner, subLists ...SubList) {
 			}
 			switch event.Method {
 			case POST:
-				cr.Cron.Stop()
 				if err := cr.UpdateRunner(ids); err != nil {
 					slog.Error("error updating cron runner from event payload", "error", err, "ids", ids)
 				} else {
-					cr.Cron.Start()
 					slog.Info("cron runner jobs updated", "ids", ids)
 				}
 			case DELETE:
-				cr.Cron.Stop()
 				cr.RemoveRunnerJob(ids)
-				cr.Cron.Start()
 			}
 		}
 	}

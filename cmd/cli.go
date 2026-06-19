@@ -235,6 +235,7 @@ var createJob = &cobra.Command{
 			Schedule: args[1],
 			Host:     args[2],
 			Commands: args[3],
+			Status:   true,
 		}
 		if len(args) == 5 {
 			file, err := os.ReadFile(args[4])
@@ -247,8 +248,8 @@ var createJob = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error creating job: %w", err)
 		}
-		fmt.Fprintf(cmd.OutOrStdout(),"job successfully created: ID: %d", id)
-		
+		fmt.Fprintf(cmd.OutOrStdout(), "job successfully created: ID: %d", id)
+
 		newJob.JobId = id
 		if err := publishToDaemon([]db.Job{newJob}, bus.POST); err != nil {
 			return err

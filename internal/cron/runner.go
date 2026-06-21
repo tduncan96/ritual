@@ -3,6 +3,7 @@ package cron
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -38,8 +39,17 @@ func (r *Runner) resolveTarget() error {
 			return err
 		}
 		signer, err := ssh.ParsePrivateKey(keyBytes)
-		home, _ := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
 		hostKeyCallback, err := knownhosts.New(filepath.Join(home, ".ssh", "known_hosts"))
+		if err != nil {
+			return err
+		}
 
 		cfg := &ssh.ClientConfig{
 			User:            host.User,
@@ -59,37 +69,43 @@ func (r *Runner) resolveTarget() error {
 }
 
 func (r *Runner) runCommand() (out []byte, code int, err error) {
-	var envLine strings.Builder
+	var cmdLine strings.Builder
 	for k, v := range r.Job.Env {
 		value := "'" + strings.ReplaceAll(v, "'", `'\''`) + "'"
-		fmt.Fprintf(&envLine, "export %s=%s", k, value)
+		fmt.Fprintf(&cmdLine, "export %s=%s\n", k, value)
 	}
-	envLine.WriteString(r.Job.Commands)
+	cmdLine.WriteString(r.Job.Commands)
 
 	var errs []error
 	if r.Client == nil {
-		cmd := exec.Command("sh", "-c", r.Job.Commands)
+		cmd := exec.Command("sh", "-c", cmdLine.String())
 		out, err = cmd.CombinedOutput()
-	} else {
-		session, err := r.Client.NewSession()
 		if err != nil {
-			code = -1
-			errs = append(errs, err)
+			if ee, ok := errors.AsType[*exec.ExitError](err); ok {
+				code = ee.ExitCode()
+			} else {
+				code = -1
+				errs = append(errs, err)
+			}
+		}
+	} else {
+		session, sErr := r.Client.NewSession()
+		if sErr != nil {
+			return nil, -1, sErr
 		}
 		defer session.Close()
 		defer r.Client.Close()
-		out, err = session.CombinedOutput(r.Job.Commands)
-	}
-	if err != nil {
-		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
-			code = ee.ExitCode()
-		} else {
-			code = -1
-			errs = append(errs, err)
+		out, err = session.CombinedOutput(cmdLine.String())
+		if err != nil {
+			if ee, ok := errors.AsType[*ssh.ExitError](err); ok {
+				code = ee.ExitStatus()
+			} else {
+				code = -1
+				errs = append(errs, err)
+			}
 		}
-	} else {
-		code = 0
 	}
+
 	return out, code, errors.Join(errs...)
 }
 
@@ -113,5 +129,12 @@ func (r Runner) ExecuteJob() error {
 	end := time.Now()
 	run.EndTime = db.TimeStamp(end)
 	run.Duration = int64(end.Sub(start))
+
+	id, err := run.CreateRun()
+	if err != nil {
+		slog.Error("error creating run record", "error", err)
+	} else {
+		slog.Info(fmt.Sprintf("job #%v successfully ran and recorded.", r.Job.JobId), "job_id", r.Job.JobId, "run_id", id)
+	}
 	return err
 }

@@ -10,6 +10,6 @@ type Host struct {
 }
 
 func GetHost(hostName string) (host Host, err error) {
-	err = DB.Get(&host, "SELECT * FROM Hosts WHERE = ?", hostName)
+	err = DB.Get(&host, "SELECT * FROM Hosts WHERE Name = ?", hostName)
 	return host, err
 }

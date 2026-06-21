@@ -34,7 +34,7 @@ func (cr *CronRunner) AddJobs(jobs []db.Job) {
 	for _, job := range jobs {
 		if job.Status {
 			entryId, err := cr.Cron.AddFunc(job.Schedule, func() {
-				var runner Runner
+				runner := Runner{Job: job}
 				if err := runner.ExecuteJob(); err != nil {
 					slog.Error(fmt.Sprintf("error executing job #%v - %v: %v", job.JobId, job.JobName, err), "error", err)
 				}

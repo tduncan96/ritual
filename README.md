@@ -26,7 +26,7 @@ go build -o ritual .
 ritual start
 
 # create a job: name, schedule, host, command, [env file]
-ritual create "nightly-backup" "0 2 * * *" local "/usr/local/bin/backup.sh"
+ritual create "nightly-backup" "0 2 * * *" localhost "/usr/local/bin/backup.sh"
 
 # run a job now by id
 ritual run 1

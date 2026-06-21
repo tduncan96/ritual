@@ -113,13 +113,9 @@ func DeleteJob(id int64) (int64, error) {
 	return result.RowsAffected()
 }
 
-func GetJob(id int64) (Job, error) {
-	var job Job
-	err := DB.Get(&job, "SELECT * FROM Jobs WHERE JobId = ?", id)
-	if err != nil {
-		return Job{}, err
-	}
-	return job, nil
+func GetJob(id int64) (job Job, err error) {
+	err = DB.Get(&job, "SELECT * FROM Jobs WHERE JobId = ?", id)
+	return job, err
 }
 
 func GetJobs(ids []int64) ([]Job, error) {

@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"ritual/internal/db"
-	"ritual/internal/run"
 
 	robfig "github.com/robfig/cron/v3"
 )
@@ -35,20 +34,15 @@ func (cr *CronRunner) AddJobs(jobs []db.Job) {
 	for _, job := range jobs {
 		if job.Status {
 			entryId, err := cr.Cron.AddFunc(job.Schedule, func() {
-				var runner run.Runner
-				if job.Host == "localhost" {
-					runner = run.LocalRunner{}
-				} else {
-					runner = run.RemoteRunner{}
-				}
-				if err := runner.ExecuteJob(job); err != nil {
+				var runner Runner
+				if err := runner.ExecuteJob(); err != nil {
 					slog.Error(fmt.Sprintf("error executing job #%v - %v: %v", job.JobId, job.JobName, err), "error", err)
 				}
 			})
 			if err != nil {
-				slog.Error(fmt.Sprintf("could not add job to cron runner", job.JobId, err), "error", err, "job", job.JobId)
+				slog.Error(fmt.Sprintf("could not add job #%v to cron runner", job.JobId), "error", err, "job", job.JobId)
 			} else {
-				slog.Info(fmt.Sprintf("job %v added to cron as entry %v", job.JobId, entryId), "job", job.JobId)
+				slog.Info(fmt.Sprintf("job #%v added to cron as entry %v", job.JobId, entryId), "job", job.JobId)
 			}
 			cr.Lookup[job.JobId] = entryId
 		}

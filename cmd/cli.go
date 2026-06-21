@@ -19,7 +19,7 @@ import (
 	"ritual/internal/bus"
 	"ritual/internal/db"
 	"ritual/internal/ops"
-	"ritual/internal/run"
+	"ritual/internal/cron"
 	"ritual/internal/srv"
 
 	"github.com/spf13/cobra"
@@ -206,13 +206,8 @@ var runJob = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var runner run.Runner
-		if job.Host == "localhost" {
-			runner = run.LocalRunner{}
-		} else {
-			runner = run.RemoteRunner{}
-		}
-		if err := runner.ExecuteJob(job); err != nil {
+		var runner cron.Runner
+		if err := runner.ExecuteJob(); err != nil {
 			return err
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started", id)

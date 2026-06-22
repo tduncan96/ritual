@@ -16,10 +16,10 @@ import (
 	"strings"
 
 	"ritual/codec"
-	"ritual/internal/bus"
+	"ritual/bus"
+	"ritual/internal/run"
 	"ritual/internal/db"
 	"ritual/internal/ops"
-	"ritual/internal/cron"
 	"ritual/internal/srv"
 
 	"github.com/spf13/cobra"
@@ -206,7 +206,7 @@ var runJob = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var runner cron.Runner
+		var runner run.Runner
 		if err := runner.ExecuteJob(); err != nil {
 			return err
 		}

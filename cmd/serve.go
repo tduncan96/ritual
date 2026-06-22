@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ritual/internal/bus"
+	"ritual/bus"
 	"ritual/internal/cron"
 	"ritual/internal/srv"
 
@@ -18,7 +18,7 @@ var serveCmd = &cobra.Command{
 	Short: "Start Ritual cron runner and web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		cron, err := cron.MakeRunner()
+		cronService, err := cron.MakeRunner()
 		if err != nil {
 			return err
 		}
@@ -26,9 +26,9 @@ var serveCmd = &cobra.Command{
 		bus.MakeBus()
 		srv.MakeMux()
 
-		go bus.CronSubscription(cron, bus.LifeCycle, bus.Database)
+		go cron.CronSubscription(cronService, bus.LifeCycle, bus.Database)
 
-		cron.Cron.Start()
+		cronService.Cron.Start()
 		go srv.SocketServe()
 		go srv.WebServe()
 

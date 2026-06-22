@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"ritual/internal/bus"
+	"ritual/bus"
 	"ritual/internal/db"
 )
 

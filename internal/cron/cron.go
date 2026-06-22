@@ -1,10 +1,13 @@
 package cron
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
+	"ritual/bus"
 	"ritual/internal/db"
+	"ritual/internal/run"
 
 	robfig "github.com/robfig/cron/v3"
 )
@@ -34,7 +37,7 @@ func (cr *CronRunner) AddJobs(jobs []db.Job) {
 	for _, job := range jobs {
 		if job.Status {
 			entryId, err := cr.Cron.AddFunc(job.Schedule, func() {
-				runner := Runner{Job: job}
+				runner := run.Runner{Job: job}
 				if err := runner.ExecuteJob(); err != nil {
 					slog.Error(fmt.Sprintf("error executing job #%v - %v: %v", job.JobId, job.JobName, err), "error", err)
 				}
@@ -71,5 +74,37 @@ func (cr *CronRunner) RemoveRunnerJob(ids []int64) {
 	for _, id := range ids {
 		cr.Cron.Remove(cr.Lookup[id])
 		delete(cr.Lookup, id)
+	}
+}
+
+func CronSubscription(cr *CronRunner, subLists ...bus.SubList) {
+	ch := bus.GlobalBus.Subscribe(subLists...)
+	defer bus.GlobalBus.Unsubscribe(ch, subLists...)
+	for event := range ch {
+		switch event.SubList {
+		case bus.LifeCycle:
+			switch event.Method {
+			case bus.PUT:
+				cr.Cron.Start()
+			case bus.DELETE:
+				cr.Cron.Stop()
+			}
+		case bus.Database:
+			var ids []int64
+			if err := json.Unmarshal(event.Payload, &ids); err != nil {
+				slog.Error("error unmarshaling event payload", "error", err)
+				return
+			}
+			switch event.Method {
+			case bus.POST:
+				if err := cr.UpdateRunner(ids); err != nil {
+					slog.Error("error updating cron runner from event payload", "error", err, "ids", ids)
+				} else {
+					slog.Info("cron runner jobs updated", "ids", ids)
+				}
+			case bus.DELETE:
+				cr.RemoveRunnerJob(ids)
+			}
+		}
 	}
 }

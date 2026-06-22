@@ -1,11 +1,7 @@
 package bus
 
 import (
-	"encoding/json"
-	"log/slog"
 	"sync"
-
-	"ritual/internal/cron"
 )
 
 type SubList int
@@ -65,38 +61,6 @@ func (bus *EventBus) Unsubscribe(ch <-chan Event, subLists ...SubList) {
 		}
 	}
 	bus.mu.Unlock()
-}
-
-func CronSubscription(cr *cron.CronRunner, subLists ...SubList) {
-	ch := GlobalBus.Subscribe(subLists...)
-	defer GlobalBus.Unsubscribe(ch, subLists...)
-	for event := range ch {
-		switch event.SubList {
-		case LifeCycle:
-			switch event.Method {
-			case PUT:
-				cr.Cron.Start()
-			case DELETE:
-				cr.Cron.Stop()
-			}
-		case Database:
-			var ids []int64
-			if err := json.Unmarshal(event.Payload, &ids); err != nil {
-				slog.Error("error unmarshaling event payload", "error", err)
-				return
-			}
-			switch event.Method {
-			case POST:
-				if err := cr.UpdateRunner(ids); err != nil {
-					slog.Error("error updating cron runner from event payload", "error", err, "ids", ids)
-				} else {
-					slog.Info("cron runner jobs updated", "ids", ids)
-				}
-			case DELETE:
-				cr.RemoveRunnerJob(ids)
-			}
-		}
-	}
 }
 
 func (bus *EventBus) Publish(events ...Event) {

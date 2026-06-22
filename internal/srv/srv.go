@@ -35,7 +35,9 @@ func WebServe() {
 }
 
 func SocketServe() {
-	os.Remove(SocketPath)
+	if err := os.Remove(SocketPath); err != nil {
+		log.Fatal(err)
+	}
 
 	sockSrv, err := net.Listen("unix", SocketPath)
 	if err != nil {

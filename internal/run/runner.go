@@ -41,7 +41,9 @@ func (r Runner) ExecuteJob() error {
 	if err != nil {
 		errs = append(errs, err)
 	}
-	r.Job.CalcNextRun()
+	if err := r.Job.CalcNextRun(); err != nil {
+		return err
+	}
 
 	end := time.Now()
 	run.EndTime = db.TimeStamp(end)

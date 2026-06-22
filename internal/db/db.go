@@ -18,7 +18,7 @@ var schema string
 func Init() (*sqlx.DB, error) {
 	path := os.Getenv("RITUAL_DB_PATH")
 	if path == "" {
-		path = "/opt/ritual/ritual.db"
+		path = "./ritual.db" // need to change before release
 	}
 
 	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"

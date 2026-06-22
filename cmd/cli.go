@@ -30,7 +30,12 @@ var host string
 var crontab bool
 var batch bool
 
-var importCmd = &cobra.Command{
+var jobCmd = &cobra.Command{
+	Use: "job",
+	Short: "execute commands against jobs",
+}
+
+var importJob = &cobra.Command{
 	Use:   "import <flags> <file path or directory; if none defualt to $RITUAL_CRON_PATH",
 	Short: "Import file contents as new job(s)",
 	Args:  cobra.RangeArgs(0, 1),
@@ -133,7 +138,7 @@ var importCmd = &cobra.Command{
 	},
 }
 
-var exportCmd = &cobra.Command{
+var exportJob = &cobra.Command{
 	Use:   "export <file type> <job id(s); if none export all jobs>",
 	Short: "Export job(s) to file",
 	Args:  cobra.MinimumNArgs(1),
@@ -225,7 +230,7 @@ var runJob = &cobra.Command{
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started", id)
 
-		if err := publishToDaemon([]db.Job{job}, bus.POST); err != nil {
+		if err := publishToDaemon([]db.Job{job}, bus.GET); err != nil {
 			return err
 		}
 
@@ -259,7 +264,7 @@ var createJob = &cobra.Command{
 		fmt.Fprintf(cmd.OutOrStdout(), "job successfully created: ID: %d", id)
 
 		newJob.JobId = id
-		if err := publishToDaemon([]db.Job{newJob}, bus.GET); err != nil {
+		if err := publishToDaemon([]db.Job{newJob}, bus.POST); err != nil {
 			return err
 		}
 
@@ -267,16 +272,57 @@ var createJob = &cobra.Command{
 	},
 }
 
+var hostCmd = &cobra.Command{
+	Use: "host",
+	Short: "manage hosts for ssh executions",
+}
+
+var addHost = &cobra.Command{
+	Use: "add <hostname> <ip address> <user> <port; if none default to 22> <key-path; if none default to ~/.ssh/id_ed25519>",
+	Short: "add a host for job execution",
+	Args: cobra.RangeArgs(3, 5),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		newHost := db.Host{
+			Name: args[0],
+			Address: args[1],
+			User: args[2],
+		}
+		if len(args) > 3 {
+			port, err := strconv.Atoi(args[3])
+			if err != nil{
+				return err
+			}
+			newHost.Port = int64(port)
+		}
+		if len(args) > 4 {
+			newHost.KeyPath = args[4]
+		}
+		
+		id, err := newHost.AddHost()
+		if err != nil {
+			return err
+		}
+		slog.Info("host created", "id", id, "name", newHost.Name)
+		fmt.Fprintf(cmd.OutOrStdout(), "host %v successfully added: ID: %d", newHost.Name, id)
+		return nil
+	},
+}
+
 func init() {
-	importCmd.Flags().BoolVarP(&crontab, "crontab", "c", false, "import from crontab")
-	importCmd.Flags().StringVarP(&host, "host", "h", "localhost", "use host other than localhost")
+	importJob.Flags().BoolVarP(&crontab, "crontab", "c", false, "import from crontab")
+	importJob.Flags().StringVarP(&host, "host", "H", "localhost", "use host other than localhost")
 
-	exportCmd.Flags().BoolVarP(&batch, "batch", "b", false, "batch export jobs to file")
+	exportJob.Flags().BoolVarP(&batch, "batch", "b", false, "batch export jobs to file")
 
-	rootCmd.AddCommand(importCmd)
-	rootCmd.AddCommand(exportCmd)
-	rootCmd.AddCommand(runJob)
-	rootCmd.AddCommand(createJob)
+	jobCmd.AddCommand(importJob)
+	jobCmd.AddCommand(exportJob)
+	jobCmd.AddCommand(runJob)
+	jobCmd.AddCommand(createJob)
+
+	hostCmd.AddCommand(addHost)
+
+	rootCmd.AddCommand(jobCmd)
+	rootCmd.AddCommand(hostCmd)
 }
 
 func publishToDaemon(jobs []db.Job, method bus.Method) error {

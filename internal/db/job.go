@@ -51,8 +51,7 @@ func (j *Job) CreateJob() (int64, error) {
 	if num == 0 {
 		var collision Job
 		var errs []error
-		getErr := DB.Get(&collision, `SELECT JobId, JobName FROM Jobs WHERE Hash = ?`, j.Hash)
-		if getErr != nil {
+		if getErr := DB.Get(&collision, `SELECT JobId, JobName FROM Jobs WHERE Hash = ?`, j.Hash); getErr != nil {
 			errs = append(errs, getErr)
 		}
 		qErr := fmt.Errorf("collision with Job #%v - %v", collision.JobId, collision.JobName)
@@ -65,7 +64,6 @@ func (j *Job) CreateJob() (int64, error) {
 		return 0, err
 	}
 
-	j.JobId = id
 	return id, nil
 }
 

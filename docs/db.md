@@ -1,6 +1,6 @@
 # `internal/db`
 
-**Files:** `db/db.go`, `db/job-db.go`, `db/run-db.go` (+ embedded `schema.sql`)
+**Files:** `db/db.go`, `db/job.go`, `db/run.go`, `db/hosts.go` (+ embedded `schema.sql`)
 
 ## Purpose
 
@@ -18,7 +18,7 @@ on, then executes the embedded `schema.sql` (idempotent `CREATE`s). The connecti
 is stored in the package global `db.DB` that the query helpers use. `Close()` closes
 it.
 
-### Jobs (`job-db.go`)
+### Jobs (`job.go`)
 The `Job` struct mirrors the Jobs table (id, name, schedule, host, commands, env,
 hash, status, timestamps, last/next run). Operations:
 
@@ -36,11 +36,18 @@ hash, status, timestamps, last/next run). Operations:
 map is stored as sorted `KEY=val\n` text and reconstructed on read — the conversion
 lives in one place (`EnvMapToString` / `EnvStringToMap`).
 
-### Runs (`run-db.go`)
+### Runs (`run.go`)
 The `Run` struct is one execution record (job id/name, host, start/end, duration,
 exit code, logs). `CreateRun()` inserts it. `TimeStamp` is a `time.Time` wrapper
 implementing `Valuer`/`Scanner` to format times consistently (`SqlTimeFormat`,
 stored UTC).
+
+### Hosts (`hosts.go`)
+The `Host` struct mirrors the Hosts table (id, name, address, port, user, key path) —
+the connection identity the [SSH runner](cron.md) needs. Only **`GetHost(name)`**
+exists today (a single read); there is no create/list/delete yet, so a host can only
+be added by raw SQL. Private keys and `known_hosts` are read from the executing user's
+`~/.ssh`, not the DB.
 
 ### Conversion
 `DefToJob` / `JobToDef` bridge to [`codec.Definition`](codec.md) for import/export.
@@ -51,11 +58,14 @@ From [TODO.md](../TODO.md):
 
 - **DB path is cwd-relative** — daemon and CLI can open different files; resolve to a
   fixed path.
-- **`Updated` is bumped on every run**, not just on edits (because the runner's
-  bookkeeping calls `UpdateJob`). Runs shouldn't count as edits.
-- `NextRun` should be computed on create/edit, not only after the first run.
+- **Runs don't update the Job.** `ExecuteJob` writes only a `Runs` row now, so
+  `Jobs.LastRun`/`NextRun` are never stamped. `CalcNextRun` is defined here but called
+  nowhere — wire it into create/edit so `NextRun` is known before the first run.
 - Schedule should be validated (`robfig.ParseStandard`) on create/edit rather than
   failing silently later in `AddFunc`.
 - The env-string format is duplicated with [`codec`](codec.md); fold into a shared
   `EnvMap` type.
+- Host management CRUD (`CreateHost`/`ListHosts`/`DeleteHost`) is missing — see TODO.
+- `schema.sql`'s `Hosts.KeyPath` default contains a literal `{$USER}` that SQLite does
+  not expand.
 </content>

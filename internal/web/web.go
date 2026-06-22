@@ -42,7 +42,7 @@ func render(w http.ResponseWriter, templateName string, data any) error {
 	t, ok := templates[templateName]
 	if !ok {
 		http.Error(w, "template not found: "+templateName, http.StatusInternalServerError)
-		return fmt.Errorf("template not found: %w", templateName)
+		return fmt.Errorf("template not found: %v", templateName)
 	}
 
 	var buf bytes.Buffer

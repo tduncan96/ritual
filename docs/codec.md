@@ -1,6 +1,6 @@
 # `codec`
 
-**Files:** `codec/codec.go`, `codec/cron-codec.go`, `codec/toml-codec.go`, `codec/yaml-codec.go`
+**Files:** `codec/codec.go`, `codec/cron.go`, `codec/toml.go`, `codec/yaml.go`
 
 ## Purpose
 

@@ -67,7 +67,8 @@ Known issues in [TODO.md](../TODO.md) — read before relying on this:
   publisher stalls (backpressure, not deadlock). Intended fix is a larger/unbounded
   buffer — *do not* drop events.
 
-Design intent (from the project memory): only user-initiated mutations publish; the
-runner's `LastRun`/`NextRun` bookkeeping writes go straight to [`db`](db.md) silently,
-to avoid a reschedule-on-every-run feedback loop.
+Design intent (from the project memory): only user-initiated mutations publish; a
+runner's per-run bookkeeping should write straight to [`db`](db.md) silently, never
+through the bus, to avoid a reschedule-on-every-run feedback loop. (Today the runner
+records nothing back onto the Job at all — see [cron.md](cron.md)/[TODO.md](../TODO.md).)
 </content>

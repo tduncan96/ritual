@@ -7,8 +7,8 @@
 The shared **operations layer** — the typed "verbs" of Ritual (create a job, publish
 events) that contain the real logic, independent of any transport. HTTP handlers in
 [`api`](api.md) are thin wrappers over these; the [scheduler](cron.md) and
-[CLI](cmd.md) fallback can call them too. This is the layer the
-[API design](../EXPLAIN.md) calls "one operation, many callers."
+[CLI](cmd.md) fallback can call them too. This is the "one operation, many callers"
+layer described in the [architecture roadmap](../ROADMAP.md).
 
 ## How it works
 

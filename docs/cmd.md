@@ -45,8 +45,10 @@ held up by a single signal-driven block.
 - **`export <type> [ids…]`** (`-b` for one batch file): loads jobs, converts to
   `Definition`s, marshals via the chosen codec, writes per-job files (or one
   `batch.<type>`).
-- **`run <id>`**: loads the job and executes it *right now* via [`run`](run.md)
-  (same `localhost` dispatch the scheduler uses).
+- **`run <id>`**: loads the job and executes it *right now* via the
+  [`cron.Runner`](cron.md) (same local/SSH dispatch the scheduler uses). **Currently
+  broken** — it builds an empty `cron.Runner{}` and never assigns the loaded job (see
+  Status).
 - **`create <name> <schedule> <host> <commands> [envfile]`**: builds a `db.Job` and
   `CreateJob()`s it.
 
@@ -78,6 +80,9 @@ flowchart LR
   from the CLI — TODO).
 - `run` and `export` publish events that are effectively no-ops; flagged for cleanup
   in TODO.
-- The `localhost`-literal dispatch in `run` shares the [`run`](run.md)/[`cron`](cron.md)
-  `isLocal` bug.
+- **`run <id>` is broken:** it does `var runner cron.Runner` then `runner.ExecuteJob()`
+  without ever setting `runner.Job`, so `resolveTarget` always returns "invalid host"
+  and the job it just loaded is discarded (`cmd/cli.go:209-210`, TODO — Bugs).
+- Host dispatch shares the [`cron`](cron.md) `isLocal` gap: imported jobs (host = real
+  hostname) resolve to an SSH lookup that has no matching `Hosts` row.
 </content>

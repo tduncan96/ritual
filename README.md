@@ -23,7 +23,7 @@ go build -o ritual .
 
 ```
 # start the scheduler + web UI (http://localhost:1771)
-ritual start
+ritual serve
 
 # create a job: name, schedule, host, command, [env file]
 ritual create "nightly-backup" "0 2 * * *" localhost "/usr/local/bin/backup.sh"

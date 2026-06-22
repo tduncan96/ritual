@@ -23,6 +23,36 @@ type Runner struct {
 	Client *ssh.Client
 }
 
+func (r Runner) ExecuteJob() error {
+	start := time.Now()
+	run := db.Run{
+		JobId:     &r.Job.JobId,
+		JobName:   r.Job.JobName,
+		Host:      r.Job.Host,
+		StartTime: db.TimeStamp(start),
+	}
+
+	if err := r.resolveTarget(); err != nil {
+		return err
+	}
+
+	out, code, err := r.runCommand()
+	run.Logs = string(out)
+	run.ExitCode = int64(code)
+
+	end := time.Now()
+	run.EndTime = db.TimeStamp(end)
+	run.Duration = int64(end.Sub(start))
+
+	id, err := run.CreateRun()
+	if err != nil {
+		slog.Error("error creating run record", "error", err)
+	} else {
+		slog.Info(fmt.Sprintf("job #%v successfully ran and recorded.", r.Job.JobId), "job_id", r.Job.JobId, "run_id", id)
+	}
+	return err
+}
+
 func (r *Runner) resolveTarget() error {
 	switch r.Job.Host {
 	case "":
@@ -107,34 +137,4 @@ func (r *Runner) runCommand() (out []byte, code int, err error) {
 	}
 
 	return out, code, errors.Join(errs...)
-}
-
-func (r Runner) ExecuteJob() error {
-	start := time.Now()
-	run := db.Run{
-		JobId:     &r.Job.JobId,
-		JobName:   r.Job.JobName,
-		Host:      r.Job.Host,
-		StartTime: db.TimeStamp(start),
-	}
-
-	if err := r.resolveTarget(); err != nil {
-		return err
-	}
-
-	out, code, err := r.runCommand()
-	run.Logs = string(out)
-	run.ExitCode = int64(code)
-
-	end := time.Now()
-	run.EndTime = db.TimeStamp(end)
-	run.Duration = int64(end.Sub(start))
-
-	id, err := run.CreateRun()
-	if err != nil {
-		slog.Error("error creating run record", "error", err)
-	} else {
-		slog.Info(fmt.Sprintf("job #%v successfully ran and recorded.", r.Job.JobId), "job_id", r.Job.JobId, "run_id", id)
-	}
-	return err
 }

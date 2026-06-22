@@ -46,5 +46,6 @@ builds a `db.Job` from the form and calls `CreateJob`).
   roadmap also wants a **Bubble Tea TUI** that mirrors these same views over the same
   [`db`](db.md)/[`ops`](ops.md) core — which is the reason to keep logic *out* of this
   package.
-- Minor: `render` uses `%w` on a non-error string in one `fmt.Errorf` (go vet) — TODO.
+- Minor: several handler error returns (`render`, `json`/template writes) are unchecked
+  (gosec G104) — TODO.
 </content>

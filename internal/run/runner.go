@@ -71,13 +71,14 @@ func (r *Runner) ResolveTarget() error {
 			return err
 		}
 
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+
 		var keyPath string
 		if strings.Contains(host.KeyPath, "~") {
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return err
-			}
-			keyPath = strings.ReplaceAll(host.KeyPath, "~", homeDir)
+			keyPath = strings.ReplaceAll(host.KeyPath, "~", home)
 		} else {
 			keyPath = host.KeyPath
 		}
@@ -86,10 +87,6 @@ func (r *Runner) ResolveTarget() error {
 			return err
 		}
 		signer, err := ssh.ParsePrivateKey(keyBytes)
-		if err != nil {
-			return err
-		}
-		home, err := os.UserHomeDir()
 		if err != nil {
 			return err
 		}

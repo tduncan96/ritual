@@ -41,7 +41,7 @@ var addHost = &cobra.Command{
 			return err
 		}
 		slog.Info("host created", "id", id, "name", newHost.Name)
-		fmt.Fprintf(cmd.OutOrStdout(), "host %v successfully added: ID: %d", newHost.Name, id)
+		fmt.Fprintf(cmd.OutOrStdout(), "host %v successfully added: ID: %d\n", newHost.Name, id)
 		return nil
 	},
 }

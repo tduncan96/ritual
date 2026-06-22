@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"maps"
-	"os/exec"
 	"regexp"
 	"slices"
 	"strings"
@@ -21,6 +20,7 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 	var buf bytes.Buffer
 	for _, def := range defs {
 		fmt.Fprintf(&buf, "## name: %v\n", def.Name)
+		fmt.Fprintf(&buf, "## host: %v\n", def.Host)
 		if len(def.Env) > 0 {
 			var envStrings []string
 			for _, key := range slices.Sorted(maps.Keys(def.Env)) {
@@ -39,23 +39,17 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 }
 
 func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
-	localHost := exec.Command("hostname")
-	out, err := localHost.Output()
-	if err != nil {
-		return []Definition{}, fmt.Errorf("error getting stdout of 'hostname': %w", err)
-	}
-	host := strings.TrimSpace(string(out))
-
 	var lines []string
 	scanner := bufio.NewScanner(bytes.NewReader(blob))
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		return []Definition{}, err
+		return defs, err
 	}
 
 	var name string
+	var host string
 	var status = true
 	env := make(map[string]string)
 
@@ -85,6 +79,11 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 		// ex. ## name: Example Job Name
 		case len(fields) > 1 && fields[1] == "name:":
 			name = strings.Join(fields[2:], " ")
+			continue
+
+		// ex. ## host: server-1
+		case len(fields) > 1 && fields[1] == "host:":
+			host = fields[1]
 			continue
 
 		// ex. 0 2 * * * /usr/.local/bin/script.sh -l
@@ -120,6 +119,7 @@ func (c CronCodec) Unmarshal(blob []byte) (defs []Definition, err error) {
 		defs = append(defs, def)
 
 		name = ""
+		host = ""
 		status = true
 	}
 	return defs, nil

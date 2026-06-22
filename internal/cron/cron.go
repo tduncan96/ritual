@@ -45,9 +45,9 @@ func (cr *CronRunner) AddJobs(jobs []db.Job) {
 			if err != nil {
 				slog.Error(fmt.Sprintf("could not add job #%v to cron runner", job.JobId), "error", err, "job", job.JobId)
 			} else {
+				cr.Lookup[job.JobId] = entryId
 				slog.Info(fmt.Sprintf("job #%v added to cron as entry %v", job.JobId, entryId), "job", job.JobId)
 			}
-			cr.Lookup[job.JobId] = entryId
 		}
 	}
 }

@@ -119,14 +119,13 @@ var importJob = &cobra.Command{
 			}
 			for _, def := range defs {
 				job := db.DefToJob(def)
-				job.Host = host
 				id, err := job.CreateJob()
 				if err != nil {
 					fmt.Printf("error creating job: %v", err)
 					continue
 				}
 				jobList = append(jobList, job)
-				fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully created", id)
+				fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully created\n", id)
 			}
 		}
 
@@ -178,7 +177,7 @@ var exportJob = &cobra.Command{
 			defs = append(defs, db.JobToDef(job))
 		}
 
-		if !batch {
+		if !batch || fileType == "cron" {
 			for _, def := range defs {
 				d := []codec.Definition{def}
 				blob, err := codec.Codecs[fileType].Marshal(d)
@@ -201,7 +200,7 @@ var exportJob = &cobra.Command{
 			}
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Jobs successfully exported!")
+		fmt.Fprintf(cmd.OutOrStdout(), "Jobs successfully exported!\n")
 
 		if err := publishToDaemon(jobList, bus.GET); err != nil {
 			return err
@@ -228,7 +227,7 @@ var runJob = &cobra.Command{
 		if err := runner.ExecuteJob(); err != nil {
 			return err
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started", id)
+		fmt.Fprintf(cmd.OutOrStdout(), "Job #%d successfully started\n", id)
 
 		if err := publishToDaemon([]db.Job{job}, bus.GET); err != nil {
 			return err
@@ -261,7 +260,7 @@ var createJob = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error creating job: %w", err)
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "job successfully created: ID: %d", id)
+		fmt.Fprintf(cmd.OutOrStdout(), "job successfully created: ID: %d\n", id)
 
 		newJob.JobId = id
 		if err := publishToDaemon([]db.Job{newJob}, bus.POST); err != nil {

@@ -42,7 +42,7 @@ func (r Runner) ExecuteJob() error {
 		errs = append(errs, err)
 	}
 	if err := r.Job.CalcNextRun(); err != nil {
-		return err
+		errs = append(errs, err)
 	}
 
 	end := time.Now()

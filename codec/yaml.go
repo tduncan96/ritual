@@ -21,7 +21,7 @@ func (y YAMLCodec) Marshal(defs []Definition) ([]byte, error) {
 func (y YAMLCodec) Unmarshal(blob []byte) ([]Definition, error) {
 	var f yamlFile
 	if err := goccy.Unmarshal(blob, &f); err != nil {
-		return []Definition{}, err
+		return nil, err
 	}
 	return f.Rituals, nil
 }

@@ -4,14 +4,10 @@ import (
 	"encoding/json"
 )
 
-type JSONCodec struct {}
-
-type jsonFile struct {
-	Rituals []Definition
-}
+type JSONCodec struct{}
 
 func (j JSONCodec) Marshal(defs []Definition) ([]byte, error) {
-	jsonData, err := json.Marshal(jsonFile{Rituals: defs})
+	jsonData, err := json.Marshal(dataFile{Rituals: defs})
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +15,7 @@ func (j JSONCodec) Marshal(defs []Definition) ([]byte, error) {
 }
 
 func (j JSONCodec) Unmarshal(blob []byte) ([]Definition, error) {
-	var f jsonFile
+	var f dataFile
 	if err := json.Unmarshal(blob, &f); err != nil {
 		return nil, err
 	}

@@ -6,12 +6,8 @@ import (
 
 type YAMLCodec struct{}
 
-type yamlFile struct {
-	Rituals []Definition
-}
-
 func (y YAMLCodec) Marshal(defs []Definition) ([]byte, error) {
-	yamlData, err := goccy.Marshal(yamlFile{Rituals: defs})
+	yamlData, err := goccy.Marshal(dataFile{Rituals: defs})
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +15,7 @@ func (y YAMLCodec) Marshal(defs []Definition) ([]byte, error) {
 }
 
 func (y YAMLCodec) Unmarshal(blob []byte) ([]Definition, error) {
-	var f yamlFile
+	var f dataFile
 	if err := goccy.Unmarshal(blob, &f); err != nil {
 		return nil, err
 	}

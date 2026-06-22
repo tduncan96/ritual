@@ -18,6 +18,10 @@ type Definition struct {
 	Status   bool              `toml:"status" yaml:"status" json:"status"`
 }
 
+type dataFile struct {
+	Rituals []Definition
+}
+
 type Codec interface {
 	Marshal([]Definition) ([]byte, error)   // to file
 	Unmarshal([]byte) ([]Definition, error) // to []struct

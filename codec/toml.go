@@ -6,12 +6,8 @@ import (
 
 type TOMLCodec struct{}
 
-type tomlFile struct {
-	Rituals []Definition
-}
-
 func (t TOMLCodec) Marshal(defs []Definition) ([]byte, error) {
-	tomlData, err := sushi.Marshal(tomlFile{Rituals: defs})
+	tomlData, err := sushi.Marshal(dataFile{Rituals: defs})
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +15,7 @@ func (t TOMLCodec) Marshal(defs []Definition) ([]byte, error) {
 }
 
 func (t TOMLCodec) Unmarshal(blob []byte) ([]Definition, error) {
-	var f tomlFile
+	var f dataFile
 	if err := sushi.Unmarshal(blob, &f); err != nil {
 		return nil, err
 	}

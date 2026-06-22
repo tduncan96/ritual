@@ -64,7 +64,6 @@ func (cr *CronRunner) UpdateRunner(ids []int64) error {
 	}
 	cr.AddJobs(jobs)
 
-	slog.Info("cron runner jobs updated", "ids", ids)
 	return nil
 }
 
@@ -94,6 +93,8 @@ func CronSubscription(cr *CronRunner, subLists ...bus.SubList) {
 				continue
 			}
 			switch event.Method {
+			case bus.GET:
+				slog.Info("jobs returned", "ids", ids)
 			case bus.POST:
 				if err := cr.UpdateRunner(ids); err != nil {
 					slog.Error("error updating cron runner from event payload", "error", err, "ids", ids)

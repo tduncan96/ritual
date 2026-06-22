@@ -27,7 +27,6 @@ import (
 var dumpPath = os.Getenv("RITUAL_CRON_PATH")
 
 var host string
-
 var crontab bool
 var batch bool
 

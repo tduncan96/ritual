@@ -1,8 +1,8 @@
 package bus
 
 import (
-	"sync"
 	"slices"
+	"sync"
 )
 
 type SubList int
@@ -39,7 +39,7 @@ func MakeBus() {
 }
 
 func (bus *EventBus) Subscribe(subLists ...SubList) <-chan Event {
-	ch := make(chan Event)
+	ch := make(chan Event, 16)
 	bus.mu.Lock()
 	for _, list := range subLists {
 		bus.subscribers[list] = append(bus.subscribers[list], ch)
@@ -53,7 +53,7 @@ func (bus *EventBus) Unsubscribe(ch <-chan Event, subLists ...SubList) {
 	for _, list := range subLists {
 		subs := bus.subscribers[list]
 
-		i := slices.IndexFunc(subs, func(c chan Event) bool { return c == ch})
+		i := slices.IndexFunc(subs, func(c chan Event) bool { return c == ch })
 		if i >= 0 {
 			bus.subscribers[list] = slices.Delete(subs, i, i+1)
 		}

@@ -70,7 +70,18 @@ func (r *Runner) ResolveTarget() error {
 		if err != nil {
 			return err
 		}
-		keyBytes, err := os.ReadFile(host.KeyPath)
+
+		var keyPath string
+		if strings.Contains(host.KeyPath, "~") {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return err
+			}
+			keyPath = strings.ReplaceAll(host.KeyPath, "~", homeDir)
+		} else {
+			keyPath = host.KeyPath
+		}
+		keyBytes, err := os.ReadFile(keyPath)
 		if err != nil {
 			return err
 		}

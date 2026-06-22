@@ -98,6 +98,7 @@ func (j *Job) CalcNextRun() error {
 	if err != nil {
 		return err
 	}
+	j.LastRun = time.Now().Format(SqlTimeFormat)
 	j.NextRun = next.Next(time.Now()).Format(SqlTimeFormat)
 	if err := j.UpdateJob(); err != nil {
 		return err

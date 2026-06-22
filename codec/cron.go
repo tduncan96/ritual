@@ -25,7 +25,7 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 			var envStrings []string
 			for _, key := range slices.Sorted(maps.Keys(def.Env)) {
 				envLine := strings.Join([]string{key, def.Env[key]}, "=")
-				envStrings = append(envStrings, envLine, "\n")
+				envStrings = append(envStrings, envLine)
 			}
 			fmt.Fprintf(&buf, "%s", strings.Join(envStrings, "\n"))
 		}
@@ -33,7 +33,7 @@ func (c CronCodec) Marshal(defs []Definition) (blob []byte, err error) {
 		if !def.Status {
 			stat = "## "
 		}
-		fmt.Fprintf(&buf, "%s%s %s\n\n", stat, def.Schedule, def.Commands)
+		fmt.Fprintf(&buf, "\n%s%s %s\n\n", stat, def.Schedule, def.Commands)
 	}
 	return buf.Bytes(), nil
 }

@@ -259,7 +259,7 @@ var createJob = &cobra.Command{
 		fmt.Fprintf(cmd.OutOrStdout(), "job successfully created: ID: %d", id)
 
 		newJob.JobId = id
-		if err := publishToDaemon([]db.Job{newJob}, bus.POST); err != nil {
+		if err := publishToDaemon([]db.Job{newJob}, bus.GET); err != nil {
 			return err
 		}
 

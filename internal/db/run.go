@@ -16,7 +16,7 @@ type Run struct {
 	StartTime TimeStamp `db:"StartTime"`
 	EndTime   TimeStamp `db:"EndTime"`
 	Duration  int64     `db:"Duration"`
-	ExitCode  int64       `db:"ExitCode"`
+	ExitCode  int64     `db:"ExitCode"`
 	Logs      string    `db:"Logs"`
 }
 

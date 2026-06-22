@@ -58,13 +58,11 @@ func (cr *CronRunner) UpdateRunner(ids []int64) error {
 		return err
 	}
 
-	cr.Cron.Stop()
 	for _, id := range ids {
 		cr.Cron.Remove(cr.Lookup[id])
 		delete(cr.Lookup, id)
 	}
 	cr.AddJobs(jobs)
-	cr.Cron.Start()
 
 	slog.Info("cron runner jobs updated", "ids", ids)
 	return nil
@@ -93,7 +91,7 @@ func CronSubscription(cr *CronRunner, subLists ...bus.SubList) {
 			var ids []int64
 			if err := json.Unmarshal(event.Payload, &ids); err != nil {
 				slog.Error("error unmarshaling event payload", "error", err)
-				return
+				continue
 			}
 			switch event.Method {
 			case bus.POST:

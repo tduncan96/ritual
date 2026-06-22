@@ -9,23 +9,25 @@ import (
 	"maps"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 
-	"ritual/codec"
 	"ritual/bus"
-	"ritual/internal/run"
+	"ritual/codec"
 	"ritual/internal/db"
 	"ritual/internal/ops"
+	"ritual/internal/run"
 	"ritual/internal/srv"
 
 	"github.com/spf13/cobra"
 )
 
 var dumpPath = os.Getenv("RITUAL_CRON_PATH")
+
+var host string
+
 var crontab bool
 var batch bool
 
@@ -75,9 +77,20 @@ var importCmd = &cobra.Command{
 		for _, file := range files {
 			if file == "crontab" {
 				fileType = "cron"
-				cmd := exec.Command("crontab", "-l")
-				out, err := cmd.Output()
+
+				runner := run.Runner{
+					Job: db.Job{
+						Commands: "crontab -l",
+						Host:     host,
+					},
+				}
+				if err := runner.ResolveTarget(); err != nil {
+					return err
+				}
+				out, code, err := runner.RunCommand()
+				slog.Info(fmt.Sprintf("crontab exited with code %v", code))
 				if err != nil {
+					slog.Error(fmt.Sprintf("crontab exited with code %v", code), "error", err)
 					return err
 				}
 				content = out
@@ -102,6 +115,7 @@ var importCmd = &cobra.Command{
 			}
 			for _, def := range defs {
 				job := db.DefToJob(def)
+				job.Host = host
 				id, err := job.CreateJob()
 				if err != nil {
 					fmt.Printf("error creating job: %v", err)
@@ -256,6 +270,7 @@ var createJob = &cobra.Command{
 
 func init() {
 	importCmd.Flags().BoolVarP(&crontab, "crontab", "c", false, "import from crontab")
+	importCmd.Flags().StringVarP(&host, "host", "h", "localhost", "use host other than localhost")
 
 	exportCmd.Flags().BoolVarP(&batch, "batch", "b", false, "batch export jobs to file")
 

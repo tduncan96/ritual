@@ -24,6 +24,10 @@ type Runner struct {
 }
 
 func (r Runner) ExecuteJob() error {
+	if err := r.ResolveTarget(); err != nil {
+		return err
+	}
+
 	start := time.Now()
 	run := db.Run{
 		JobId:     &r.Job.JobId,
@@ -32,28 +36,30 @@ func (r Runner) ExecuteJob() error {
 		StartTime: db.TimeStamp(start),
 	}
 
-	if err := r.resolveTarget(); err != nil {
-		return err
+	var errs []error
+	out, code, err := r.RunCommand()
+	if err != nil {
+		errs = append(errs, err)
 	}
-
-	out, code, err := r.runCommand()
-	run.Logs = string(out)
-	run.ExitCode = int64(code)
+	r.Job.CalcNextRun()
 
 	end := time.Now()
 	run.EndTime = db.TimeStamp(end)
 	run.Duration = int64(end.Sub(start))
+	run.Logs = string(out)
+	run.ExitCode = int64(code)
 
 	id, err := run.CreateRun()
 	if err != nil {
+		errs = append(errs, err)
 		slog.Error("error creating run record", "error", err)
 	} else {
 		slog.Info(fmt.Sprintf("job #%v successfully ran and recorded.", r.Job.JobId), "job_id", r.Job.JobId, "run_id", id)
 	}
-	return err
+	return errors.Join(errs...)
 }
 
-func (r *Runner) resolveTarget() error {
+func (r *Runner) ResolveTarget() error {
 	switch r.Job.Host {
 	case "":
 		return fmt.Errorf("invalid host")
@@ -98,7 +104,7 @@ func (r *Runner) resolveTarget() error {
 	}
 }
 
-func (r *Runner) runCommand() (out []byte, code int, err error) {
+func (r *Runner) RunCommand() (out []byte, code int, err error) {
 	var cmdLine strings.Builder
 	for k, v := range r.Job.Env {
 		value := "'" + strings.ReplaceAll(v, "'", `'\''`) + "'"

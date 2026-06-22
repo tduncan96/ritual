@@ -2,6 +2,7 @@ package bus
 
 import (
 	"sync"
+	"slices"
 )
 
 type SubList int
@@ -51,14 +52,12 @@ func (bus *EventBus) Unsubscribe(ch <-chan Event, subLists ...SubList) {
 	bus.mu.Lock()
 	for _, list := range subLists {
 		subs := bus.subscribers[list]
-		for i, v := range subs {
-			if v == ch {
-				subs[i] = subs[len(subs)-1]
-				subs[len(subs)-1] = nil
-				subs = subs[:len(subs)-1]
-				break
-			}
+
+		i := slices.IndexFunc(subs, func(c chan Event) bool { return c == ch})
+		if i >= 0 {
+			bus.subscribers[list] = slices.Delete(subs, i, i+1)
 		}
+		ch = nil
 	}
 	bus.mu.Unlock()
 }

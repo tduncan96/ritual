@@ -31,5 +31,5 @@ CREATE TABLE IF NOT EXISTS Hosts (
     Address TEXT NOT NULL,
     Port INTEGER NOT NULL DEFAULT 22,
     User TEXT NOT NULL,
-    KeyPath TEXT NOT NULL DEFAULT "/home/{$USER}/.ssh/id_ed25519"
+    KeyPath TEXT NOT NULL DEFAULT "~/.ssh/id_ed25519"
 )

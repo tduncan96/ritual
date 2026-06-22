@@ -206,7 +206,7 @@ var runJob = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var runner run.Runner
+		runner := run.Runner{Job: job}
 		if err := runner.ExecuteJob(); err != nil {
 			return err
 		}

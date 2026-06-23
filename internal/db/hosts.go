@@ -61,7 +61,7 @@ func (h *Host) UpdateHost() (err error) {
 		h,
 	)
 	fmt.Printf("host #%d successfully updated\n", h.HostId)
-	return nil
+	return err
 }
 
 func DeleteHost(h Host) (err error) {

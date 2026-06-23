@@ -31,7 +31,7 @@ var crontab bool
 var batch bool
 
 var jobCmd = &cobra.Command{
-	Use: "job",
+	Use:   "job",
 	Short: "execute commands against jobs",
 }
 
@@ -271,7 +271,6 @@ var createJob = &cobra.Command{
 	},
 }
 
-
 func init() {
 	importJob.Flags().BoolVarP(&crontab, "crontab", "c", false, "import from crontab")
 	importJob.Flags().StringVarP(&host, "host", "H", "localhost", "use host other than localhost")
@@ -282,7 +281,6 @@ func init() {
 	jobCmd.AddCommand(exportJob)
 	jobCmd.AddCommand(runJob)
 	jobCmd.AddCommand(createJob)
-
 
 	rootCmd.AddCommand(jobCmd)
 }

@@ -57,7 +57,6 @@ func (bus *EventBus) Unsubscribe(ch <-chan Event, subLists ...SubList) {
 		if i >= 0 {
 			bus.subscribers[list] = slices.Delete(subs, i, i+1)
 		}
-		// ch = nil // dont I need this to prevent a memory leek? Nullify the reference and all that?
 	}
 	bus.mu.Unlock()
 }

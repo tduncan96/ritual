@@ -67,11 +67,12 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	host := r.FormValue("host")
 
 	j := db.Job{
 		JobName:  r.FormValue("job_name"),
 		Schedule: r.FormValue("schedule"),
-		Host:     r.FormValue("host"),
+		Host:     &host,
 		Status:   true,
 		Commands: r.FormValue("command"),
 	}
@@ -91,7 +92,7 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		_, err := db.DeleteJob(int64(id))
+		err := db.DeleteJob(int64(id))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

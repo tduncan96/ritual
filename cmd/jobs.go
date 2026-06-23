@@ -85,7 +85,7 @@ var importJob = &cobra.Command{
 				runner := run.Runner{
 					Job: db.Job{
 						Commands: "crontab -l",
-						Host:     host,
+						Host:     &host,
 					},
 				}
 				if err := runner.ResolveTarget(); err != nil {
@@ -245,7 +245,7 @@ var createJob = &cobra.Command{
 		newJob := db.Job{
 			JobName:  args[0],
 			Schedule: args[1],
-			Host:     args[2],
+			Host:     &args[2],
 			Commands: args[3],
 			Status:   true,
 		}

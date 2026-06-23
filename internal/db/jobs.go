@@ -17,22 +17,22 @@ import (
 
 // Job
 type Job struct {
-	JobId    int64  `db:"JobId"`
-	JobName  string `db:"JobName"`
-	Schedule string `db:"Schedule"`
-	Host     string `db:"Host"`
-	Commands string `db:"Commands"`
-	Env      envMap `db:"Env"`
-	Hash     string `db:"Hash"`
-	Status   bool   `db:"Status"`
-	Created  string `db:"Created"`
-	Updated  string `db:"Updated"`
-	LastRun  string `db:"LastRun"`
-	NextRun  string `db:"NextRun"`
+	JobId    int64   `db:"JobId"`
+	JobName  string  `db:"JobName"`
+	Schedule string  `db:"Schedule"`
+	Host     *string `db:"Host"`
+	Commands string  `db:"Commands"`
+	Env      envMap  `db:"Env"`
+	Hash     string  `db:"Hash"`
+	Status   bool    `db:"Status"`
+	Created  string  `db:"Created"`
+	Updated  string  `db:"Updated"`
+	LastRun  string  `db:"LastRun"`
+	NextRun  string  `db:"NextRun"`
 }
 
 func (j *Job) CreateJob() (int64, error) {
-	j.Hash = codec.GetHash(j.Host, j.Schedule, j.Commands, j.Env)
+	j.Hash = codec.GetHash(*j.Host, j.Schedule, j.Commands, j.Env)
 
 	result, err := DB.NamedExec(
 		`INSERT INTO Jobs (JobName, Schedule, Host, Commands, Env, Hash, Status) 
@@ -68,20 +68,24 @@ func (j *Job) CreateJob() (int64, error) {
 }
 
 func (j *Job) UpdateJob() error {
-	j.Hash = codec.GetHash(j.Host, j.Schedule, j.Commands, j.Env)
+	next, err := robfig.ParseStandard(j.Schedule)
+	if err != nil {
+		return err
+	}
+	j.NextRun = next.Next(time.Now()).Format(SqlTimeFormat)
+	j.Hash = codec.GetHash(*j.Host, j.Schedule, j.Commands, j.Env)
+
 	if _, err := DB.NamedExec(
 		`UPDATE Jobs SET
-				JobName  = :JobName,
-				Schedule = :Schedule,
-				Host     = :Host,
-				Commands = :Commands,
-				Env      = :Env,
-				Hash     = :Hash,
-				Status   = :Status,
-				Updated  = datetime('now'),
-				LastRun  = :LastRun,
-				NextRun  = :NextRun
-				WHERE JobId = :JobId`,
+			JobName  = :JobName,
+			Schedule = :Schedule,
+			Host     = :Host,
+			Commands = :Commands,
+			Env      = :Env,
+			Hash     = :Hash,
+			Status   = :Status,
+			Updated  = datetime('now'),
+			WHERE JobId = :JobId`,
 		j,
 	); err != nil {
 		return err
@@ -98,18 +102,21 @@ func (j *Job) CalcNextRun() error {
 	}
 	j.LastRun = time.Now().Format(SqlTimeFormat)
 	j.NextRun = next.Next(time.Now()).Format(SqlTimeFormat)
-	if err := j.UpdateJob(); err != nil {
+	if _, err := DB.NamedExec(
+		`UPDATE Jobs Set
+			LastRun = :LastRun,
+			NextRun = :NextRun
+			WHERE JobId = :JobId`,
+		j,
+	); err != nil {
 		return err
 	}
 	return nil
 }
 
-func DeleteJob(id int64) (int64, error) {
-	result, err := DB.Exec("DELETE FROM Jobs WHERE JobId = ?", id)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
+func DeleteJob(id int64) (err error) {
+	_, err = DB.Exec("DELETE FROM Jobs WHERE JobId = ?", id)
+	return err
 }
 
 func GetJob(id int64) (job Job, err error) {
@@ -117,8 +124,7 @@ func GetJob(id int64) (job Job, err error) {
 	return job, err
 }
 
-func GetJobs(ids []int64) ([]Job, error) {
-	var jobs []Job
+func GetJobs(ids []int64) (jobs []Job, err error) {
 	for _, id := range ids {
 		job, err := GetJob(id)
 		if err != nil {
@@ -130,13 +136,9 @@ func GetJobs(ids []int64) ([]Job, error) {
 	return jobs, nil
 }
 
-func GetAllJobs() ([]Job, error) {
-	var jobs []Job
-	err := DB.Select(&jobs, "SELECT * FROM Jobs")
-	if err != nil {
-		return []Job{}, err
-	}
-	return jobs, nil
+func GetAllJobs() (jobs []Job, err error) {
+	err = DB.Select(&jobs, "SELECT * FROM Jobs")
+	return jobs, err
 }
 
 // envMap
@@ -187,7 +189,7 @@ func DefToJob(def codec.Definition) Job {
 	job := Job{
 		JobName:  def.Name,
 		Schedule: def.Schedule,
-		Host:     def.Host,
+		Host:     &def.Host,
 		Commands: def.Commands,
 		Env:      def.Env,
 		Status:   def.Status,
@@ -199,7 +201,7 @@ func JobToDef(job Job) codec.Definition {
 	def := codec.Definition{
 		Name:     job.JobName,
 		Schedule: job.Schedule,
-		Host:     job.Host,
+		Host:     *job.Host,
 		Commands: job.Commands,
 		Env:      job.Env,
 		Status:   job.Status,

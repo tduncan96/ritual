@@ -29,9 +29,9 @@ CREATE TABLE IF NOT EXISTS Hosts (
     HostId INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT NOT NULL UNIQUE,
     Address TEXT NOT NULL,
-    User TEXT NOT NULL
+    User TEXT NOT NULL,
     Port INTEGER NOT NULL DEFAULT 22,
     KeyPath TEXT NOT NULL DEFAULT "~/.ssh/id_ed25519",
     Created TEXT NOT NULL DEFAULT (datetime('now')),
     Updated TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+);

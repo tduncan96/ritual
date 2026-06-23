@@ -62,13 +62,13 @@ func (r Runner) ExecuteJob() error {
 }
 
 func (r *Runner) ResolveTarget() error {
-	switch r.Job.Host {
+	switch *r.Job.Host {
 	case "":
 		return fmt.Errorf("invalid host")
 	case "localhost":
 		return nil
 	default:
-		host, err := db.GetHost(r.Job.Host)
+		host, err := db.GetHost(*r.Job.Host)
 		if err != nil {
 			return err
 		}

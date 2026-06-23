@@ -109,8 +109,7 @@ var importJob = &cobra.Command{
 
 			possTypes := slices.Collect(maps.Keys(codec.Codecs))
 			if !slices.Contains(possTypes, fileType) {
-				err := fmt.Errorf("invalid file type: %v", fileType)
-				return err
+				return fmt.Errorf("invalid file type: %v", fileType)
 			}
 
 			defs, err := codec.Codecs[fileType].Unmarshal(content)

@@ -60,7 +60,7 @@ func (h *Host) UpdateHost() (err error) {
 			WHERE HostId = :HostId`,
 		h,
 	)
-	fmt.Printf("host #%d successfully updated\n", h.HostId)
+	fmt.Printf("host %v successfully updated\n", h.Name)
 	return err
 }
 

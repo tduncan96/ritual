@@ -16,8 +16,9 @@ daemon is down it falls back to writing the DB directly.
 | `cmd` | [cmd.md](cmd.md) | Cobra commands: `serve` (daemon) + `import`/`export`/`run`/`create`. |
 | `codec` | [codec.md](codec.md) | Convert job definitions ↔ cron/TOML/YAML files; job hashing. |
 | `internal/db` | [db.md](db.md) | The only thing that touches SQLite. Job/Run/Host models + CRUD. |
-| `internal/cron` | [cron.md](cron.md) | Wraps robfig/cron (`cron.go`) and executes jobs locally or over SSH (`runner.go`). |
-| `internal/bus` | [bus.md](bus.md) | In-process pub/sub event bus connecting mutations to the scheduler. |
+| `internal/cron` | [cron.md](cron.md) | Wraps robfig/cron into the live scheduler and keeps it in sync with the DB. |
+| `internal/run` | [run.md](run.md) | Executes a job's command locally or over SSH and records the run. |
+| `bus` | [bus.md](bus.md) | In-process pub/sub event bus connecting mutations to the scheduler. |
 | `internal/ops` | [ops.md](ops.md) | Shared, transport-free operations layer (the "verbs"). |
 | `internal/api` | [api.md](api.md) | Thin JSON HTTP handlers over `ops`, served on the socket/TCP. |
 | `internal/web` | [web.md](web.md) | HTML UI: embedded templates + handlers. |
@@ -36,16 +37,15 @@ flowchart TD
     OPS --> DB[(db: SQLite)]
     OPS --> BUS[bus: event bus]
     BUS --> CRON[cron: live scheduler]
-    CRON --> RUN[cron: execute job - local or SSH]
+    CRON --> RUN[run: execute job - local or SSH]
     RUN --> DB
 ```
 
 ## Related design docs
 
 - [../ROADMAP.md](../ROADMAP.md) — direction and phases.
-- [../TODO.md](../TODO.md) — current bugs and planned features (referenced throughout).
+- [../TODO.md](../TODO.md) — the live work queue (current bugs and small jobs).
 
 > **Status:** Ritual is mid-build. Each package doc has a "Status & future" section
-> noting what's real vs. planned. Where a doc cites a known bug it points at
-> `TODO.md`, which is the source of truth for the work queue.
+> noting what's real vs. planned. `TODO.md` is the source of truth for the work queue.
 </content>

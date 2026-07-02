@@ -26,19 +26,22 @@ go build -o ritual .
 ritual serve
 
 # create a job: name, schedule, host, command, [env file]
-ritual create "nightly-backup" "0 2 * * *" localhost "/usr/local/bin/backup.sh"
+ritual job create "nightly-backup" "0 2 * * *" localhost "/usr/local/bin/backup.sh"
 
 # run a job now by id
-ritual run 1
+ritual job run 1
 
 # import jobs
-ritual import ./jobs/backup.toml
-ritual import ./jobs/
-ritual import --crontab
+ritual job import ./jobs/backup.toml
+ritual job import ./jobs/
+ritual job import --crontab
 
 # export jobs to files (no ids = all jobs)
-ritual export yaml
-ritual export json 1 2
+ritual job export yaml
+ritual job export json 1 2
+
+# register a host for SSH jobs: name, address, user, [port], [key-path]
+ritual host add web01 10.0.0.5 deploy 22 ~/.ssh/id_ed25519
 ```
 
 ## Configuration

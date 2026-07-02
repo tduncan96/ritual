@@ -41,10 +41,10 @@ func MakeBus() {
 func (bus *EventBus) Subscribe(subLists ...SubList) <-chan Event {
 	ch := make(chan Event, 16)
 	bus.mu.Lock()
+	defer bus.mu.Unlock()
 	for _, list := range subLists {
 		bus.subscribers[list] = append(bus.subscribers[list], ch)
 	}
-	bus.mu.Unlock()
 	return ch
 }
 

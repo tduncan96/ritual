@@ -1,6 +1,6 @@
-# `internal/bus`
+# `bus`
 
-**File:** `bus/bus.go`
+**File:** `bus/bus.go` (top-level package)
 
 ## Purpose
 
@@ -39,8 +39,8 @@ var GlobalBus *EventBus   // created by MakeBus() in `serve`
 
 - **`Subscribe(topics…)`** — makes a buffered channel (cap 16), registers it under
   each topic, returns the receive end.
-- **`Publish(events…)`** — under the lock, sends each event to every channel
-  subscribed to its topic.
+- **`Publish(events…)`** — takes the lock only to grab the topic's subscriber slice,
+  unlocks, then sends each event to those channels.
 - **`Unsubscribe(ch, topics…)`** — removes the channel from those topics.
 
 ### The consumer: `CronSubscription`
@@ -56,16 +56,19 @@ Producers are [`ops`](ops.md) (after a successful DB write) and the
 
 ## Status & future
 
-Known issues in [TODO.md](../TODO.md) — read before relying on this:
+Fixed since the last audit: a bad payload no longer kills the consumer (`continue`, not
+`return`); `Unsubscribe` writes the reslice back into the map; and `Publish` no longer
+sends under the lock (it snapshots the slice, unlocks, then sends), so a slow consumer
+can only stall that one publish, not deadlock the whole bus.
 
-- **A bad payload kills the consumer permanently:** `CronSubscription` does `return`
-  (not `continue`) on an unmarshal error, ending the loop forever.
-- **`Unsubscribe` doesn't actually remove the channel:** the reslice isn't written
-  back into the map, leaving a `nil` entry that makes `Publish` block forever sending
-  to it (staticcheck SA4006).
-- **`Publish` sends under the lock**, so if a slow consumer fills its 16-buffer the
-  publisher stalls (backpressure, not deadlock). Intended fix is a larger/unbounded
-  buffer — *do not* drop events.
+Remaining, in [TODO.md](../TODO.md):
+
+- **`Publish`'s snapshot is shallow.** `subs := bus.subscribers[topic]` copies the slice
+  header but shares the backing array with the map, so a concurrent `Unsubscribe`
+  (`slices.Delete`) or `Subscribe` (`append`) races the `range`. Fix: `slices.Clone`.
+- A full 16-buffer still *blocks* that publisher (backpressure, not deadlock). If a dead
+  consumer should never stall publishers, add a non-blocking send — but that's a
+  drop-policy choice; today the intent is *do not* drop events.
 
 Design intent (from the project memory): only user-initiated mutations publish; a
 runner's per-run bookkeeping should write straight to [`db`](db.md) silently, never

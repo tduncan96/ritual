@@ -1,6 +1,6 @@
 # `cmd`
 
-**Files:** `cmd/root.go`, `cmd/serve.go`, `cmd/cli.go`
+**Files:** `cmd/root.go`, `cmd/serve.go`, `cmd/jobs.go`, `cmd/hosts.go`
 
 ## Purpose
 
@@ -8,8 +8,9 @@ Defines the Cobra command tree — everything you can type after `ritual`. Two v
 different kinds of command live here:
 
 - **`serve`** — starts the long-lived **daemon** (scheduler + servers).
-- **`import` / `export` / `run` / `create`** — short-lived **CLI** commands that
-  manipulate jobs and then notify the daemon.
+- **`job …` / `host …`** — short-lived **CLI** commands grouped under two parents:
+  `ritual job {import,export,run,create}` (`jobs.go`) manipulate jobs and then notify
+  the daemon; `ritual host {add}` (`hosts.go`) manages the `Hosts` table.
 
 ## How it works
 
@@ -37,7 +38,7 @@ ctx, stop := signal.NotifyContext(ctx, os.Interrupt, SIGTERM)
 So the daemon = one scheduler + one event-bus consumer + two HTTP listeners, all
 held up by a single signal-driven block.
 
-### `cli.go` — the management verbs
+### `jobs.go` — the job verbs (under `ritual job`)
 - **`import [path|dir]`** (`-c` for crontab): reads files (or `crontab -l`), picks a
   [codec](codec.md) by file extension, unmarshals to `Definition`s, converts to
   `db.Job`, and `CreateJob()`s each. Defaults to `$RITUAL_CRON_PATH` when no path is
@@ -45,12 +46,16 @@ held up by a single signal-driven block.
 - **`export <type> [ids…]`** (`-b` for one batch file): loads jobs, converts to
   `Definition`s, marshals via the chosen codec, writes per-job files (or one
   `batch.<type>`).
-- **`run <id>`**: loads the job and executes it *right now* via the
-  [`cron.Runner`](cron.md) (same local/SSH dispatch the scheduler uses). **Currently
-  broken** — it builds an empty `cron.Runner{}` and never assigns the loaded job (see
-  Status).
+- **`run <id>`**: loads the job via `db.GetJob` and executes it *right now* via
+  [`run.Runner`](run.md) (same local/SSH dispatch the scheduler uses), then publishes a
+  no-op GET so the manual run doesn't reschedule the job.
 - **`create <name> <schedule> <host> <commands> [envfile]`**: builds a `db.Job` and
   `CreateJob()`s it.
+
+### `hosts.go` — the host verbs (under `ritual host`)
+- **`add <hostname> <address> <user> [port] [key-path]`**: builds a `db.Host` and
+  `AddHost()`s it (port defaults to 22, key-path to `~/.ssh/id_ed25519`). `db` also has
+  `GetAllHosts`/`UpdateHost`/`DeleteHost`, but only `add` has a CLI surface so far.
 
 Each verb that changes data calls **`publishToDaemon`**, which is the CLI→daemon
 bridge: it marshals the affected job IDs into an `ops.RequestBody` and `POST`s it to
@@ -71,18 +76,16 @@ flowchart LR
 
 ## Status & future
 
-- **Missing verbs:** `list`, `delete`, and `edit` have DB support but no CLI surface
-  yet (TODO — Features).
+- **Missing verbs:** jobs have no `list`/`delete`/`edit` CLI surface yet (DB support
+  exists); hosts have only `add` (no `list`/`update`/`delete`).
 - **Mutations don't yet route *through* the daemon ops layer.** `create`/`run`/
   `import` write the DB directly and then merely *notify* via `/api/publish`. The
   intended end state is CLI → `ops` over the socket, with the direct DB write kept
   only as the daemon-down fallback (`/api/jobs/new` exists but is currently unused
-  from the CLI — TODO).
-- `run` and `export` publish events that are effectively no-ops; flagged for cleanup
-  in TODO.
-- **`run <id>` is broken:** it does `var runner cron.Runner` then `runner.ExecuteJob()`
-  without ever setting `runner.Job`, so `resolveTarget` always returns "invalid host"
-  and the job it just loaded is discarded (`cmd/cli.go:209-210`, TODO — Bugs).
-- Host dispatch shares the [`cron`](cron.md) `isLocal` gap: imported jobs (host = real
-  hostname) resolve to an SSH lookup that has no matching `Hosts` row.
+  from the CLI).
+- `run` and `export` publish GET events that are effectively no-ops.
+- **`create localhost` fails the FK** and NULL hosts panic the runner — the `isLocal`
+  gap shared with [`run`](run.md): `create` stores `Host = &"localhost"` but no
+  `Hosts` row named `localhost` is ever seeded, and imported jobs (host = real hostname)
+  have no matching `Hosts` row either. See High in [TODO.md](../TODO.md).
 </content>

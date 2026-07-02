@@ -2,15 +2,16 @@ package cron
 
 import (
 	"encoding/json"
-	"fmt"
-	"log/slog"
 
 	"ritual/bus"
 	"ritual/internal/db"
+	"ritual/internal/logger"
 	"ritual/internal/run"
 
 	robfig "github.com/robfig/cron/v3"
 )
+
+var log = logger.For("cron")
 
 type CronRunner struct {
 	Cron   *robfig.Cron
@@ -39,14 +40,22 @@ func (cr *CronRunner) AddJobs(jobs []db.Job) {
 			entryId, err := cr.Cron.AddFunc(job.Schedule, func() {
 				runner := run.Runner{Job: job}
 				if err := runner.ExecuteJob(); err != nil {
-					slog.Error(fmt.Sprintf("error executing job #%v - %v: %v", job.JobId, job.JobName, err), "error", err)
+					log.Error().
+						Err(err).
+						Job(logger.Execute, job).
+						Msg("error executing job")
 				}
 			})
 			if err != nil {
-				slog.Error(fmt.Sprintf("could not add job #%v to cron runner", job.JobId), "error", err, "job", job.JobId)
+				log.Error().
+					Err(err).
+					Job(logger.Serve, job).
+					Msg("could not add job to cron runner")
 			} else {
 				cr.Lookup[job.JobId] = entryId
-				slog.Info(fmt.Sprintf("job #%v added to cron as entry %v", job.JobId, entryId), "job", job.JobId)
+				log.Info().
+					Job(logger.Serve, job).
+					Msgf("job added to cron as entry #%v", entryId)
 			}
 		}
 	}
@@ -89,17 +98,20 @@ func CronSubscription(cr *CronRunner, subLists ...bus.SubList) {
 		case bus.Database:
 			var ids []int64
 			if err := json.Unmarshal(event.Payload, &ids); err != nil {
-				slog.Error("error unmarshaling event payload", "error", err)
+				log.Error().
+					Err(err).
+					Msg("error unmarshaling event payload")
 				continue
 			}
 			switch event.Method {
-			case bus.GET:
-				slog.Info("jobs returned", "ids", ids)
 			case bus.POST:
 				if err := cr.UpdateRunner(ids); err != nil {
-					slog.Error("error updating cron runner from event payload", "error", err, "ids", ids)
+					log.Error().
+						Err(err).
+						Msg("error updating cron runner from event payload")
 				} else {
-					slog.Info("cron runner jobs updated", "ids", ids)
+					log.Info().
+						Msg("cron runner jobs updated")
 				}
 			case bus.DELETE:
 				cr.RemoveRunnerJob(ids)

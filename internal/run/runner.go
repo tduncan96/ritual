@@ -3,7 +3,6 @@ package run
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -16,12 +15,15 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 
 	"ritual/internal/db"
+	"ritual/internal/logger"
 )
 
 type Runner struct {
 	Job    db.Job
 	Client *ssh.Client
 }
+
+var log = logger.For("runner")
 
 func (r Runner) ExecuteJob() error {
 	if err := r.ResolveTarget(); err != nil {
@@ -54,9 +56,16 @@ func (r Runner) ExecuteJob() error {
 	id, err := run.CreateRun()
 	if err != nil {
 		errs = append(errs, err)
-		slog.Error("error creating run record", "error", err)
+		log.Error().
+			Err(err).
+			Job(logger.Execute, r.Job).
+			Msg("error creating run record")
 	} else {
-		slog.Info(fmt.Sprintf("job #%v successfully ran and recorded.", r.Job.JobId), "job_id", r.Job.JobId, "run_id", id)
+		run.RunId = id
+		log.Info().
+			Job(logger.Execute, r.Job).
+			Run(run).
+			Msg("job successfully ran and recorded")
 	}
 	return errors.Join(errs...)
 }
@@ -66,29 +75,23 @@ func (r *Runner) ResolveTarget() error {
 	case "":
 		return fmt.Errorf("invalid host")
 	case "localhost":
-		return nil
+		return fmt.Errorf("invalid host")
 	default:
 		host, err := db.GetHost(*r.Job.Host)
 		if err != nil {
 			return err
 		}
 
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-
-		var keyPath string
-		if strings.Contains(host.KeyPath, "~") {
-			keyPath = strings.ReplaceAll(host.KeyPath, "~", home)
-		} else {
-			keyPath = host.KeyPath
-		}
-		keyBytes, err := os.ReadFile(keyPath)
+		keyBytes, err := os.ReadFile(host.KeyPath)
 		if err != nil {
 			return err
 		}
 		signer, err := ssh.ParsePrivateKey(keyBytes)
+		if err != nil {
+			return err
+		}
+
+		home, err := os.UserHomeDir()
 		if err != nil {
 			return err
 		}

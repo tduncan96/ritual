@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS Jobs (
     JobId INTEGER PRIMARY KEY AUTOINCREMENT,
     JobName TEXT NOT NULL, 
     Schedule TEXT NOT NULL,
-    Host TEXT REFERENCES Hosts(Name) DEFAULT "localhost" ON DELETE SET NULL,
+    Host TEXT REFERENCES Hosts(Name) ON DELETE SET NULL,
     Commands TEXT NOT NULL,
     Env TEXT NOT NULL DEFAULT "",
     Hash TEXT NOT NULL UNIQUE,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS Hosts (
     Address TEXT NOT NULL,
     User TEXT NOT NULL,
     Port INTEGER NOT NULL DEFAULT 22,
-    KeyPath TEXT NOT NULL DEFAULT "~/.ssh/id_ed25519",
+    KeyPath TEXT NOT NULL DEFAULT "/etc/.ssh/id_ed25519",
     Created TEXT NOT NULL DEFAULT (datetime('now')),
     Updated TEXT NOT NULL DEFAULT (datetime('now'))
 );

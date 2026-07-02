@@ -62,10 +62,11 @@ func (bus *EventBus) Unsubscribe(ch <-chan Event, subLists ...SubList) {
 }
 
 func (bus *EventBus) Publish(events ...Event) {
-	bus.mu.Lock()
-	defer bus.mu.Unlock()
 	for _, event := range events {
-		for _, ch := range bus.subscribers[event.SubList] {
+		bus.mu.Lock()
+		subs := slices.Clone(bus.subscribers[event.SubList])
+		bus.mu.Unlock()
+		for _, ch := range subs {
 			ch <- event
 		}
 	}

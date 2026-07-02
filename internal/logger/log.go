@@ -25,16 +25,14 @@ type Logger struct {
 }
 
 func For(component string) Logger {
-	logger := log.With().
-		Str("service", "ritual").
-		Str("component", component).
-		Logger()
-	return Logger{logger: logger}
+	return Logger{logger: log.With().Str("component", component).Logger()}
 }
 
+func (l Logger) Debug() Event { return Event{Event: l.logger.Debug()} }
 func (l Logger) Info() Event  { return Event{Event: l.logger.Info()} }
 func (l Logger) Warn() Event  { return Event{Event: l.logger.Warn()} }
 func (l Logger) Error() Event { return Event{Event: l.logger.Error()} }
+func (l Logger) Fatal() Event { return Event{Event: l.logger.Fatal()} }
 
 type Event struct {
 	*zlog.Event
@@ -47,22 +45,26 @@ func (e Event) Err(err error) Event {
 
 func (e Event) Job(v Verb, j db.Job) Event {
 	e.Event.
-		Str("Verb", string(v)).
-		Int64("JobId", j.JobId).
-		Str("JobName", j.JobName).
-		Str("Host", *j.Host)
+		Str("verb", string(v)).
+		Int64("job_id", j.JobId).
+		Str("job_name", j.JobName)
+	if j.Host != nil {
+		e.Event.Str("host", *j.Host)
+	}
 	return e
 }
 
 func (e Event) Run(r db.Run) Event {
 	e.Event.
-		Int64("RunId", r.RunId).
-		Dur("Duration", time.Duration(r.Duration)).
-		Int64("ExitCode", r.ExitCode)
+		Int64("run_id", r.RunId).
+		Dur("duration", time.Duration(r.Duration)).
+		Int64("exit_code", r.ExitCode)
 	return e
 }
 
 func init() {
 	zlog.TimeFieldFormat = "2006-01-02 15:04:05"
 	zlog.TimestampFunc = func() time.Time { return time.Now().UTC() }
+
+	log.Logger = log.Logger.With().Str("service", "ritual").Logger()
 }

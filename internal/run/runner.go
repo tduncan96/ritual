@@ -23,7 +23,7 @@ type Runner struct {
 	Client *ssh.Client
 }
 
-var log = logger.For("runner")
+var log = logger.For("run")
 
 func (r Runner) ExecuteJob() error {
 	if err := r.ResolveTarget(); err != nil {
